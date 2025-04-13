@@ -36,6 +36,16 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "0966bbb0-3b68-433d-93ed-796bdc8ff8d8"
+      },
+      "apiUrl": "https://api.mediclinic.com"
+    },
+    "owner": "german_perdomo"
   }
 }
