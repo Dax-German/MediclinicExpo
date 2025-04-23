@@ -15,7 +15,7 @@ export default function HomeScreen() {
     { 
       id: '2', 
       name: 'Pediatría',
-      icon: require('../assets/Iconos/app-medica.png'),
+      icon: require('../assets/Iconos/pediatria.png'),
     },
     { 
       id: '3', 
@@ -25,12 +25,12 @@ export default function HomeScreen() {
     { 
       id: '4', 
       name: 'Odontología',
-      icon: require('../assets/Iconos/app.png'),
+      icon: require('../assets/Iconos/odontologia.png'),
     },
     { 
       id: '5', 
       name: 'Optometría',
-      icon: require('../assets/Iconos/estetoscopio.png'),
+      icon: require('../assets/Iconos/optometria.png'),
     },
   ];
 

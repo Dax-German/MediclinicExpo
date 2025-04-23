@@ -34,14 +34,14 @@ export default function ProfileScreen() {
     {
       id: '3',
       title: 'Método de pago',
-      iconImage: require('../assets/Iconos/app.png'),
+      iconImage: require('../assets/Iconos/pago.png'),
       onPress: () => {},
       showChevron: true,
     },
     {
       id: '4',
       title: 'Notificaciones',
-      iconImage: require('../assets/Iconos/app.png'),
+      iconImage: require('../assets/Iconos/notificaciones.png'),
       onPress: () => {},
       subtitle: 'Activadas',
       showChevron: true,
@@ -49,14 +49,14 @@ export default function ProfileScreen() {
     {
       id: '5',
       title: 'Ajustes',
-      iconImage: require('../assets/Iconos/app.png'),
+      iconImage: require('../assets/Iconos/ajustes.png'),
       onPress: () => {},
       showChevron: true,
     },
     {
       id: '6',
       title: 'Ayuda y soporte',
-      iconImage: require('../assets/Iconos/app.png'),
+      iconImage: require('../assets/Iconos/ayuda.png'),
       onPress: () => {},
       showChevron: true,
     },
