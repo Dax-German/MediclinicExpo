@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
-import { router } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function RegisterScreen() {
   const [documentType, setDocumentType] = useState('cedula');
@@ -17,6 +16,23 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showDocumentTypePicker, setShowDocumentTypePicker] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [redirectToLogin, setRedirectToLogin] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Si el estado de redirección está activo, redirigir a LoginScreen
+  if (redirectToLogin) {
+    return <Redirect href={"/LoginScreen" as any} />;
+  }
+
+  // Función para renderizar el texto del tipo de documento seleccionado
+  const getDocumentTypeText = () => {
+    switch(documentType) {
+      case 'cedula': return 'Cédula de Ciudadanía';
+      case 'pasaporte': return 'Pasaporte';
+      case 'ti': return 'Tarjeta de Identidad';
+      default: return 'Seleccionar tipo de documento';
+    }
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -67,10 +83,38 @@ export default function RegisterScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (validateForm()) {
-      // TODO: Implementar lógica para registrar al usuario en la API
-      router.navigate('../LoginScreen');
+      setIsLoading(true);
+      
+      try {
+        // Llamada al servicio de registro (comentado para desarrollo)
+        /* await authService.register({
+          documentType,
+          documentNumber,
+          name,
+          email,
+          phone,
+          password
+        });
+        
+        console.log('Usuario registrado exitosamente'); */
+        
+        // Simulamos un tiempo de espera
+        setTimeout(() => {
+          setIsLoading(false);
+          // Redirigir a login después del registro exitoso
+          setRedirectToLogin(true);
+        }, 1000);
+      } catch (error) {
+        setIsLoading(false);
+        alert(`Error al registrar: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      }
+    } else {
+      // Mostrar errores pero permitir la navegación si todos los campos están llenos
+      if (documentNumber && name && email && phone && password && confirmPassword) {
+        setRedirectToLogin(true);
+      }
     }
   };
 
@@ -84,7 +128,7 @@ export default function RegisterScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <TouchableOpacity 
           style={styles.backButton} 
-          onPress={() => router.back()}
+          onPress={() => setRedirectToLogin(true)}
         >
           <Image source={require('../assets/Iconos/volver.png')} style={{width: 24, height: 24}} />
         </TouchableOpacity>
@@ -106,29 +150,70 @@ export default function RegisterScreen() {
             <Text style={styles.label}>Tipo de documento</Text>
             <TouchableOpacity
               style={styles.selectInput}
-              onPress={() => setShowDocumentTypePicker(!showDocumentTypePicker)}
+              onPress={() => setShowDocumentTypePicker(true)}
             >
-              <Text>
-                {documentType === 'cedula' ? 'Cédula de Ciudadanía' :
-                 documentType === 'pasaporte' ? 'Pasaporte' :
-                 documentType === 'ti' ? 'Tarjeta de Identidad' : 'Seleccionar tipo de documento'}
-              </Text>
+              <Text style={styles.selectText}>{getDocumentTypeText()}</Text>
             </TouchableOpacity>
-            {showDocumentTypePicker && (
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={documentType}
-                  onValueChange={(itemValue) => {
-                    setDocumentType(itemValue as string);
-                    setShowDocumentTypePicker(false);
-                  }}
-                >
-                  <Picker.Item label="Cédula de Ciudadanía" value="cedula" />
-                  <Picker.Item label="Pasaporte" value="pasaporte" />
-                  <Picker.Item label="Tarjeta de Identidad" value="ti" />
-                </Picker>
-              </View>
-            )}
+            
+            {/* Modal para el selector de tipo de documento */}
+            <Modal
+              visible={showDocumentTypePicker}
+              transparent={true}
+              animationType="fade"
+              onRequestClose={() => setShowDocumentTypePicker(false)}
+            >
+              <TouchableOpacity 
+                style={styles.modalOverlay} 
+                activeOpacity={1} 
+                onPress={() => setShowDocumentTypePicker(false)}
+              >
+                <View style={styles.modalContainer}>
+                  <View style={styles.modalContent}>
+                    <Text style={styles.modalTitle}>Tipo de documento</Text>
+                    
+                    <TouchableOpacity 
+                      style={styles.modalOption}
+                      onPress={() => {
+                        setDocumentType('cedula');
+                        setShowDocumentTypePicker(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.modalOptionText, 
+                        documentType === 'cedula' && styles.selectedOption
+                      ]}>Cédula de Ciudadanía</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.modalOption}
+                      onPress={() => {
+                        setDocumentType('pasaporte');
+                        setShowDocumentTypePicker(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.modalOptionText, 
+                        documentType === 'pasaporte' && styles.selectedOption
+                      ]}>Pasaporte</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.modalOption}
+                      onPress={() => {
+                        setDocumentType('ti');
+                        setShowDocumentTypePicker(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.modalOptionText, 
+                        documentType === 'ti' && styles.selectedOption
+                      ]}>Tarjeta de Identidad</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            </Modal>
+            
             {errors.documentType ? <Text style={styles.errorText}>{errors.documentType}</Text> : null}
           </View>
           
@@ -231,13 +316,14 @@ export default function RegisterScreen() {
           <TouchableOpacity 
             style={styles.registerButton} 
             onPress={handleRegister}
+            disabled={isLoading}
           >
-            <Text style={styles.registerButtonText}>Registrarse</Text>
+            <Text style={styles.registerButtonText}>{isLoading ? 'Registrando...' : 'Registrarse'}</Text>
           </TouchableOpacity>
           
           <View style={styles.loginContainer}>
             <Text style={styles.loginText}>¿Ya tienes una cuenta? </Text>
-            <TouchableOpacity onPress={() => router.navigate('../LoginScreen')}>
+            <TouchableOpacity onPress={() => setRedirectToLogin(true)}>
               <Text style={styles.loginLink}>Iniciar sesión</Text>
             </TouchableOpacity>
           </View>
@@ -312,13 +398,52 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
-  pickerContainer: {
+  selectText: {
+    fontSize: 16,
+    color: '#333',
+    paddingVertical: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
     backgroundColor: 'white',
+    padding: 20,
     borderRadius: 10,
-    marginTop: 5,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    overflow: 'hidden',
+    width: '80%',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#0077B6',
+    textAlign: 'center',
+  },
+  modalOption: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedOption: {
+    color: '#0077B6',
+    fontWeight: 'bold',
   },
   passwordContainer: {
     flexDirection: 'row',

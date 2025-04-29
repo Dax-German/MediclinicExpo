@@ -1,11 +1,5 @@
-import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { Redirect } from 'expo-router';
 
 export default function AlertsTab() {
-  useEffect(() => {
-    // Redirigir a la pantalla de alertas
-    router.replace('/AlertsScreen');
-  }, []);
-
-  return null;
+  return <Redirect href={"/AlertsScreen" as any} />;
 } 

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Image, Platform } from 'react-native';
+import { Platform } from 'react-native';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -42,11 +42,7 @@ export default function TabLayout() {
         options={{
           title: 'Inicio',
           tabBarIcon: ({ color, size }) => (
-            <Image 
-              source={require('../../assets/Iconos/app.png')}
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
+            <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
       />
@@ -55,11 +51,7 @@ export default function TabLayout() {
         options={{
           title: 'Citas',
           tabBarIcon: ({ color, size }) => (
-            <Image 
-              source={require('../../assets/Iconos/calendario.png')}
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
+            <Ionicons name="calendar-outline" size={size} color={color} />
           ),
         }}
       />
@@ -68,11 +60,7 @@ export default function TabLayout() {
         options={{
           title: 'Especialidades',
           tabBarIcon: ({ color, size }) => (
-            <Image 
-              source={require('../../assets/Iconos/estetoscopio.png')}
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
+            <Ionicons name="medkit-outline" size={size} color={color} />
           ),
         }}
       />
@@ -81,11 +69,7 @@ export default function TabLayout() {
         options={{
           title: 'Alertas',
           tabBarIcon: ({ color, size }) => (
-            <Image 
-              source={require('../../assets/Iconos/app.png')}
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
+            <Ionicons name="notifications-outline" size={size} color={color} />
           ),
         }}
       />
@@ -94,11 +78,7 @@ export default function TabLayout() {
         options={{
           title: 'Perfil',
           tabBarIcon: ({ color, size }) => (
-            <Image 
-              source={require('../../assets/Iconos/app-medica.png')}
-              style={{ width: size, height: size, tintColor: color }}
-              resizeMode="contain"
-            />
+            <Ionicons name="person-outline" size={size} color={color} />
           ),
         }}
       />

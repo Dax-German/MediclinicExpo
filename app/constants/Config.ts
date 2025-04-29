@@ -1,56 +1,47 @@
-import Constants from 'expo-constants';
+/**
+ * Configuración global de la aplicación
+ * 
+ * Este archivo contiene las configuraciones principales que se utilizan
+ * en toda la aplicación, incluyendo URLs de API, timeouts, y otras
+ * configuraciones importantes.
+ */
 
 /**
- * Interfaz para definir la estructura de configuración de la aplicación
- * 
- * Contiene las propiedades básicas necesarias y permite propiedades adicionales
- * mediante el índice genérico [key: string]: any
+ * Tipo de datos para la configuración
  */
-interface ConfigType {
-  apiUrl: string;     // URL base para las llamadas a la API
-  appName: string;    // Nombre de la aplicación
-  appVersion: string; // Versión actual de la aplicación
-  [key: string]: any; // Permite propiedades adicionales dinámicas
+export interface ConfigType {
+  /** URL base para las peticiones a la API */
+  apiUrl: string;
+  
+  /** Tiempo máximo de espera para peticiones HTTP (en ms) */
+  requestTimeout: number;
+  
+  /** URL del chatbot de Telegram para asistencia */
+  telegramBotUrl: string;
+  
+  /** Flag para usar datos simulados en lugar de API real */
+  useMockData: boolean;
+  
+  /** Flag para habilitar el modo de depuración */
+  debugMode: boolean;
 }
 
 /**
- * Configuración predeterminada que se usará cuando no se pueda acceder
- * a la configuración de Expo o cuando falten valores
+ * Configuración predeterminada (modo local)
+ * 
+ * Esta configuración está optimizada para desarrollo local
+ * sin necesidad de conexión a backend
  */
 const defaultConfig: ConfigType = {
-  apiUrl: 'http://localhost:3000',
-  appName: 'MediClinic',
-  appVersion: '1.0.0',
+  apiUrl: 'http://offline-mode', // URL ficticia ya que usaremos solo datos simulados
+  requestTimeout: 10000,
+  telegramBotUrl: 'https://t.me/mediclinic_bot',
+  useMockData: true, // Siempre usar datos simulados en modo local
+  debugMode: true
 };
 
-/**
- * Función para obtener valores de configuración de manera segura
- * 
- * @param path - Ruta para acceder a la propiedad de configuración usando notación de punto
- * @param defaultValue - Valor predeterminado que se devolverá si no se encuentra la propiedad
- * @returns El valor de configuración encontrado o el valor predeterminado
- */
-export const getConfig = <T>(path: string, defaultValue: T): T => {
-  try {
-    // Intenta obtener la configuración de Expo, si no está disponible usa la configuración predeterminada
-    const config: ConfigType = Constants.expoConfig?.extra as ConfigType || defaultConfig;
-    
-    // Navega a través de la ruta de propiedades usando reduce
-    return path.split('.').reduce<any>((acc, part) => acc && acc[part], config) ?? defaultValue;
-  } catch (error) {
-    // Registra el error y devuelve el valor predeterminado en caso de error
-    console.warn(`Error accessing config path ${path}:`, error);
-    return defaultValue;
-  }
-};
+// Exportamos directamente la configuración predeterminada
+// sin preocuparnos por diferentes entornos
+const Config: ConfigType = defaultConfig;
 
-/**
- * Objeto de configuración exportado con valores obtenidos de getConfig
- * 
- * Proporciona acceso directo a las propiedades de configuración más utilizadas
- */
-export const Config = {
-  apiUrl: getConfig<string>('apiUrl', defaultConfig.apiUrl),
-  appName: getConfig<string>('appName', defaultConfig.appName),
-  appVersion: getConfig<string>('appVersion', defaultConfig.appVersion),
-}; 
+export default Config; 

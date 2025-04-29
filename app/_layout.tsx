@@ -6,25 +6,21 @@ import { SplashScreen, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
-import { Config } from './constants/Config';
 
 // Prevenir que la pantalla de splash se oculte automáticamente antes de que la carga de assets esté completa
 SplashScreen.preventAutoHideAsync();
 
 // Logs para depuración de la configuración de Expo
-console.log('Constants keys:', Object.keys(Constants));
-console.log('Constants.expoConfig:', Constants.expoConfig);
-console.log('Constants.appOwnership:', Constants.appOwnership);
-console.log('Constants.debugMode:', Constants.debugMode);
-console.log('Constants.deviceName:', Constants.deviceName);
-console.log('Constants.executionEnvironment:', Constants.executionEnvironment);
-
-// Verificación de la configuración cargada de la aplicación
-console.log('App config loaded:', {
-  apiUrl: Config.apiUrl,
-  appName: Config.appName,
-  appVersion: Config.appVersion
-});
+try {
+  console.log('Constants keys:', Object.keys(Constants));
+  console.log('Constants.expoConfig:', Constants.expoConfig);
+  console.log('Constants.appOwnership:', Constants.appOwnership);
+  console.log('Constants.debugMode:', Constants.debugMode);
+  console.log('Constants.deviceName:', Constants.deviceName);
+  console.log('Constants.executionEnvironment:', Constants.executionEnvironment);
+} catch (error) {
+  console.warn('Error al acceder a propiedades de Constants:', error);
+}
 
 /**
  * Componente principal de la aplicación que configura la navegación y el tema
@@ -48,14 +44,18 @@ export default function RootLayout() {
 
   // Configuración y depuración de los enlaces profundos (deep linking)
   useEffect(() => {
-    // Define esquema URL explícitamente para evitar errores de configuración
-    const url = Linking.createURL('/', { scheme: 'myapp' });
-    console.log('Created URL:', url);
-    
-    // Obtener y mostrar la URL inicial para depuración
-    Linking.getInitialURL().then(initialUrl => {
-      console.log('Initial URL:', initialUrl);
-    });
+    try {
+      // Define esquema URL explícitamente para evitar errores de configuración
+      const url = Linking.createURL('/', { scheme: 'myapp' });
+      console.log('Created URL:', url);
+      
+      // Obtener y mostrar la URL inicial para depuración
+      Linking.getInitialURL().then(initialUrl => {
+        console.log('Initial URL:', initialUrl);
+      });
+    } catch (error) {
+      console.warn('Error en la configuración de deep linking:', error);
+    }
   }, []);
 
   // No renderizar nada hasta que las fuentes estén cargadas
@@ -99,6 +99,28 @@ export default function RootLayout() {
           options={{ 
             headerShown: true,
             title: '¿Olvidaste tu contraseña?',
+            gestureEnabled: false 
+          }} 
+        />
+        {/* Pantallas individuales fuera del sistema de pestañas */}
+        <Stack.Screen 
+          name="HomeScreen" 
+          options={{ 
+            headerShown: false,
+            gestureEnabled: false 
+          }} 
+        />
+        <Stack.Screen 
+          name="SpecialtiesScreen" 
+          options={{ 
+            headerShown: false,
+            gestureEnabled: false 
+          }} 
+        />
+        <Stack.Screen 
+          name="ScheduleAppointmentScreen" 
+          options={{ 
+            headerShown: false,
             gestureEnabled: false 
           }} 
         />

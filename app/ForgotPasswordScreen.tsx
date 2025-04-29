@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
@@ -17,20 +17,42 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [redirectToLogin, setRedirectToLogin] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSendResetLink = () => {
+  // Si el estado de redirección está activo, redirigir a LoginScreen
+  if (redirectToLogin) {
+    return <Redirect href={"/LoginScreen" as any} />;
+  }
+
+  const handleSendResetLink = async () => {
     if (!email.trim()) {
-      alert('Por favor, ingrese su correo electrónico');
+      setError('Por favor, ingrese su correo electrónico');
       return;
     }
 
+    setError(null);
     setIsSubmitting(true);
     
-    // Simulamos el envío del enlace de restablecimiento
-    setTimeout(() => {
+    try {
+      // Llamada al servicio de recuperación (comentado para desarrollo)
+      /* const success = await authService.requestPasswordReset(email);
+      
+      if (success) {
+        setResetSent(true);
+      } else {
+        setError('No se pudo enviar el enlace. Intente de nuevo más tarde.');
+      } */
+      
+      // Simulamos el envío del enlace de restablecimiento
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setResetSent(true);
+      }, 1500);
+    } catch (error) {
       setIsSubmitting(false);
-      setResetSent(true);
-    }, 1500);
+      setError('Ocurrió un error al procesar su solicitud. Intente de nuevo más tarde.');
+    }
   };
 
   return (
@@ -42,7 +64,7 @@ export default function ForgotPasswordScreen() {
       
       <TouchableOpacity 
         style={styles.backButton} 
-        onPress={() => router.back()}
+        onPress={() => setRedirectToLogin(true)}
       >
         <Image source={require('../assets/Iconos/volver.png')} style={{width: 24, height: 24}} />
       </TouchableOpacity>
@@ -72,6 +94,10 @@ export default function ForgotPasswordScreen() {
               editable={!isSubmitting}
             />
             
+            {error && (
+              <Text style={styles.errorText}>{error}</Text>
+            )}
+            
             <TouchableOpacity 
               style={[styles.button, isSubmitting && styles.buttonDisabled]}
               onPress={handleSendResetLink}
@@ -90,7 +116,7 @@ export default function ForgotPasswordScreen() {
             </Text>
             <TouchableOpacity 
               style={styles.button}
-              onPress={() => router.navigate('../LoginScreen')}
+              onPress={() => setRedirectToLogin(true)}
             >
               <Text style={styles.buttonText}>Volver al inicio de sesión</Text>
             </TouchableOpacity>
@@ -165,6 +191,13 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    marginBottom: 15,
+    textAlign: 'center',
+    width: '100%',
   },
   successContainer: {
     alignItems: 'center',

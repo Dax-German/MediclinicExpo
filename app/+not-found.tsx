@@ -49,13 +49,14 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 5,
   },
+  headerRight: {
+    width: 34, // Para mantener el header centrado
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
-  },
-  headerRight: {
-    width: 34, // Para mantener el header centrado
+    marginHorizontal: 10,
   },
   content: {
     flex: 1,

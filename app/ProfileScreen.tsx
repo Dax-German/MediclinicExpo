@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Redirect, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Image, ImageSourcePropType, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -16,58 +17,130 @@ type ProfileOption = {
 };
 
 export default function ProfileScreen() {
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState('Juan García');
+  const [profileEmail, setProfileEmail] = useState('juangarcia@gmail.com');
+
+  // Función para cargar los datos del perfil
+  const loadProfileData = useCallback(async () => {
+    try {
+      // Cargar imagen
+      const savedImage = await AsyncStorage.getItem('@MediClinic:profileImage');
+      if (savedImage) {
+        setProfileImage(savedImage);
+      }
+      
+      // Cargar nombre y email
+      const savedName = await AsyncStorage.getItem('@MediClinic:profileName');
+      const savedEmail = await AsyncStorage.getItem('@MediClinic:profileEmail');
+      
+      if (savedName) setProfileName(savedName);
+      if (savedEmail) setProfileEmail(savedEmail);
+    } catch (error) {
+      console.error('Error al cargar datos del perfil:', error);
+    }
+  }, []);
+
+  // Cargar datos al iniciar
+  useEffect(() => {
+    loadProfileData();
+  }, [loadProfileData]);
+
+  // Cargar datos cada vez que la pantalla obtiene el foco
+  useFocusEffect(
+    useCallback(() => {
+      loadProfileData();
+    }, [loadProfileData])
+  );
+
+  // Si hay una redirección pendiente, realizarla
+  if (redirectTo) {
+    return <Redirect href={redirectTo as any} />;
+  }
+
+  const handleEditProfile = () => {
+    setRedirectTo('/EditProfileScreen');
+  };
+
+  const handleViewPersonalInfo = () => {
+    setRedirectTo('/PersonalInfoScreen');
+  };
+
+  const handleViewMedicalHistory = () => {
+    setRedirectTo('/MedicalHistoryScreen');
+  };
+
+  const toggleNotifications = () => {
+    setNotificationsEnabled(!notificationsEnabled);
+  };
+
+  const handleSettings = () => {
+    setRedirectTo('/SettingsScreen');
+  };
+
+  const handleSupport = () => {
+    setRedirectTo('/SupportScreen');
+  };
+
+  const handleLogout = () => {
+    setRedirectTo('/LoginScreen');
+  };
+
+  const handleImagePicker = () => {
+    setRedirectTo('/PhotoPickerScreen');
+  };
+
   const profileOptions: ProfileOption[] = [
     {
       id: '1',
       title: 'Información personal',
       iconImage: require('../assets/Iconos/app-medica.png'),
-      onPress: () => {},
+      onPress: handleViewPersonalInfo,
       showChevron: true,
     },
     {
       id: '2',
       title: 'Historial médico',
       iconImage: require('../assets/Iconos/estetoscopio.png'),
-      onPress: () => {},
-      showChevron: true,
-    },
-    {
-      id: '3',
-      title: 'Método de pago',
-      iconImage: require('../assets/Iconos/pago.png'),
-      onPress: () => {},
+      onPress: handleViewMedicalHistory,
       showChevron: true,
     },
     {
       id: '4',
       title: 'Notificaciones',
       iconImage: require('../assets/Iconos/notificaciones.png'),
-      onPress: () => {},
-      subtitle: 'Activadas',
+      onPress: toggleNotifications,
+      subtitle: notificationsEnabled ? 'Activadas' : 'Desactivadas',
       showChevron: true,
     },
     {
       id: '5',
       title: 'Ajustes',
       iconImage: require('../assets/Iconos/ajustes.png'),
-      onPress: () => {},
+      onPress: handleSettings,
       showChevron: true,
     },
     {
       id: '6',
       title: 'Ayuda y soporte',
       iconImage: require('../assets/Iconos/ayuda.png'),
-      onPress: () => {},
+      onPress: handleSupport,
       showChevron: true,
     },
     {
       id: '7',
       title: 'Cerrar sesión',
       iconImage: require('../assets/Iconos/volver.png'),
-      onPress: () => router.replace('/LoginScreen'),
+      onPress: handleLogout,
       showChevron: false,
     },
   ];
+
+  const handleBackPress = () => {
+    setRedirectTo('/HomeScreen');
+  };
 
   const renderOption = (option: ProfileOption) => (
     <TouchableOpacity 
@@ -95,7 +168,7 @@ export default function ProfileScreen() {
       <StatusBar style="light" />
       
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Image source={require('../assets/Iconos/volver.png')} style={{width: 24, height: 24}} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Mi Perfil</Text>
@@ -105,17 +178,24 @@ export default function ProfileScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.profileHeader}>
           <View style={styles.profileImageContainer}>
-            <Image 
-              source={require('../assets/Iconos/app-medica.png')} 
-              style={styles.profileImage}
-            />
-            <TouchableOpacity style={styles.editImageButton}>
+            {profileImage ? (
+              <Image 
+                source={{ uri: profileImage }} 
+                style={styles.profileImage}
+              />
+            ) : (
+              <Image 
+                source={require('../assets/Iconos/app-medica.png')} 
+                style={styles.profileImage}
+              />
+            )}
+            <TouchableOpacity style={styles.editImageButton} onPress={handleImagePicker}>
               <Ionicons name="camera-outline" size={16} color="white" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.profileName}>Juan García</Text>
-          <Text style={styles.profileEmail}>juangarcia@gmail.com</Text>
-          <TouchableOpacity style={styles.editProfileButton}>
+          <Text style={styles.profileName}>{profileName}</Text>
+          <Text style={styles.profileEmail}>{profileEmail}</Text>
+          <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
             <Text style={styles.editProfileText}>Editar perfil</Text>
           </TouchableOpacity>
         </View>

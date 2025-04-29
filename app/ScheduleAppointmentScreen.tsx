@@ -1,16 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-    FlatList,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  FlatList,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 // Tipo para la información del médico
@@ -29,6 +29,11 @@ const SPECIALTIES = [
   { id: '3', name: 'Planificación familiar' },
   { id: '4', name: 'Odontología' },
   { id: '5', name: 'Optometría' },
+  { id: '6', name: 'Dermatología' },
+  { id: '7', name: 'Traumatología' },
+  { id: '8', name: 'Cardiología' },
+  { id: '9', name: 'Neurología' },
+  { id: '10', name: 'Ginecología' },
 ];
 
 // Datos de ejemplo de doctores
@@ -72,8 +77,11 @@ const DOCTORS: Doctor[] = [
 
 export default function ScheduleAppointmentScreen() {
   const params = useLocalSearchParams();
+  const router = useRouter();
   const initialSpecialtyId = params.specialtyId as string;
   const initialDoctorId = params.doctorId as string;
+  const fromScreen = params.fromScreen as string || 'specialties';
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
 
   // Estados
   const [currentStep, setCurrentStep] = useState<'specialty' | 'doctor' | 'datetime'>(
@@ -141,10 +149,19 @@ export default function ScheduleAppointmentScreen() {
     setSelectedDate(date);
   };
 
+  const handleBackPress = () => {
+    // Determinar a qué pantalla regresar según el parámetro fromScreen
+    if (fromScreen === 'appointments') {
+      setRedirectTo('/AppointmentsScreen');
+    } else {
+      setRedirectTo('/SpecialtiesScreen');
+    }
+  };
+
   const handleConfirmAppointment = () => {
     // Aquí iría la lógica para guardar la cita
     alert('¡Cita agendada con éxito!');
-    router.replace('/HomeScreen');
+    setRedirectTo('/HomeScreen');
   };
 
   const formatDate = (dateString: string) => {
@@ -319,6 +336,11 @@ export default function ScheduleAppointmentScreen() {
     }
   };
 
+  // Si hay una redirección pendiente, realizarla
+  if (redirectTo) {
+    return <Redirect href={redirectTo as any} />;
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -326,7 +348,7 @@ export default function ScheduleAppointmentScreen() {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.headerBackButton} 
-          onPress={() => router.back()}
+          onPress={handleBackPress}
         >
           <Image 
             source={require('../assets/Iconos/volver.png')} 
@@ -401,13 +423,13 @@ const styles = StyleSheet.create({
   headerBackButton: {
     padding: 5,
   },
+  headerRight: {
+    width: 34, // Para mantener el header centrado
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
-  },
-  headerRight: {
-    width: 34, // Para mantener el header centrado
   },
   progressContainer: {
     flexDirection: 'row',

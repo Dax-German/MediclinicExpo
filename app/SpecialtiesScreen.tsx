@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -15,7 +15,13 @@ type Specialty = {
 
 export default function SpecialtiesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
+
+  // Si hay una redirección pendiente, realizarla
+  if (redirectTo) {
+    return <Redirect href={redirectTo as any} />;
+  }
+
   const specialties: Specialty[] = [
     {
       id: '1',
@@ -73,13 +79,7 @@ export default function SpecialtiesScreen() {
     : specialties;
 
   const renderSpecialty = ({ item }: { item: Specialty }) => (
-    <TouchableOpacity 
-      style={styles.specialtyCard}
-      onPress={() => router.push({
-        pathname: `/DoctorsListScreen`,
-        params: { specialty: item.name }
-      })}
-    >
+    <View style={styles.specialtyCard}>
       <View style={styles.specialtyIconContainer}>
         <Ionicons name={item.icon} size={28} color="#2D6CDF" />
       </View>
@@ -90,15 +90,23 @@ export default function SpecialtiesScreen() {
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color="#888" />
-    </TouchableOpacity>
+    </View>
   );
+
+  const handleScheduleAppointment = () => {
+    setRedirectTo('/ScheduleAppointmentScreen?fromScreen=specialties');
+  };
+
+  const handleBackPress = () => {
+    setRedirectTo('/HomeScreen');
+  };
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
       
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Especialidades</Text>
@@ -138,6 +146,12 @@ export default function SpecialtiesScreen() {
           }
         />
       </View>
+
+      {/* Botón flotante para agendar cita */}
+      <TouchableOpacity style={styles.floatingButton} onPress={handleScheduleAppointment}>
+        <Ionicons name="calendar" size={24} color="white" />
+        <Text style={styles.floatingButtonText}>Agendar Cita</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -159,13 +173,13 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 5,
   },
+  headerRight: {
+    width: 34, // Para mantener el header centrado
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
-  },
-  headerRight: {
-    width: 34, // Para mantener el header centrado
   },
   content: {
     flex: 1,
@@ -243,5 +257,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#777',
     marginTop: 10,
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#2D6CDF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  floatingButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
 }); 

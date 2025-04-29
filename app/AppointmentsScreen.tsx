@@ -1,110 +1,165 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Appointment, appointmentService } from './services';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-type Appointment = {
-  id: string;
-  doctor: string;
-  specialty: string;
-  date: string;
-  time: string;
-  status: 'upcoming' | 'completed' | 'cancelled';
-};
-
 export default function AppointmentsScreen() {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: '1',
-      doctor: 'Dr. Carlos Rodríguez',
-      specialty: 'Cardiología',
-      date: '10 Abril, 2024',
-      time: '9:30 AM',
-      status: 'upcoming',
-    },
-    {
-      id: '2',
-      doctor: 'Dra. María González',
-      specialty: 'Dermatología',
-      date: '15 Abril, 2024',
-      time: '11:00 AM',
-      status: 'upcoming',
-    },
-    {
-      id: '3',
-      doctor: 'Dr. José Fernández',
-      specialty: 'Traumatología',
-      date: '20 Marzo, 2024',
-      time: '10:00 AM',
-      status: 'completed',
-    },
-    {
-      id: '4',
-      doctor: 'Dra. Ana Martínez',
-      specialty: 'Oftalmología',
-      date: '5 Marzo, 2024',
-      time: '16:30 PM',
-      status: 'cancelled',
-    },
-  ]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
 
-  const filteredAppointments = appointments.filter(appointment => 
-    activeTab === 'upcoming' 
-      ? appointment.status === 'upcoming'
-      : appointment.status === 'completed' || appointment.status === 'cancelled'
-  );
+  /**
+   * Función para cargar las citas según la pestaña activa
+   */
+  const loadAppointments = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Llamada al servicio según la pestaña activa
+      const data = activeTab === 'upcoming' 
+        ? await appointmentService.getUpcomingAppointments() 
+        : await appointmentService.getAppointmentHistory();
+      
+      setAppointments(data);
+    } catch (err) {
+      console.error('Error al cargar citas:', err);
+      setError('No se pudieron cargar las citas. Intente nuevamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeTab]);
 
-  const renderAppointment = ({ item }: { item: Appointment }) => (
-    <TouchableOpacity style={styles.appointmentCard}>
-      <View style={styles.appointmentHeader}>
-        <Text style={styles.doctorName}>{item.doctor}</Text>
-        {item.status === 'cancelled' && (
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>Cancelada</Text>
+  // Cargar las citas al montar el componente y cuando cambie la pestaña
+  useEffect(() => {
+    loadAppointments();
+  }, [loadAppointments]);
+
+  /**
+   * Maneja la reprogramación de una cita
+   */
+  const handleRescheduleAppointment = (id: string) => {
+    setRedirectTo(`/ScheduleAppointmentScreen?appointmentId=${id}`);
+  };
+
+  /**
+   * Maneja la cancelación de una cita
+   */
+  const handleCancel = async (appointmentId: string) => {
+    try {
+      await appointmentService.cancelAppointment(appointmentId);
+      // Recargar las citas para reflejar el cambio
+      loadAppointments();
+    } catch (err) {
+      console.error('Error al cancelar cita:', err);
+      // Aquí podríamos mostrar un mensaje de error al usuario
+    }
+  };
+
+  /**
+   * Convierte el estado de la cita de inglés a español y su formato correspondiente
+   */
+  const getAppointmentStatus = (status: string) => {
+    switch (status) {
+      case 'scheduled':
+        return { text: 'Programada', color: '#2D6CDF' };
+      case 'completed':
+        return { text: 'Completada', color: '#4CAF50' };
+      case 'cancelled':
+        return { text: 'Cancelada', color: '#FF3B30' };
+      case 'noshow':
+        return { text: 'No asistió', color: '#FF9500' };
+      default:
+        return { text: 'Desconocido', color: '#777' };
+    }
+  };
+
+  const renderAppointment = ({ item }: { item: Appointment }) => {
+    const status = getAppointmentStatus(item.status);
+    const doctorName = item.doctor ? `Dr. ${item.doctor.firstName} ${item.doctor.lastName}` : 'Médico no asignado';
+    const specialtyName = item.specialty?.name || 'Especialidad no especificada';
+    
+    // Formatear la fecha para mostrarla de forma amigable
+    const appointmentDate = new Date(item.date);
+    const formattedDate = appointmentDate.toLocaleDateString('es-ES', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
+    return (
+      <TouchableOpacity style={styles.appointmentCard}>
+        <View style={styles.appointmentHeader}>
+          <Text style={styles.doctorName}>{doctorName}</Text>
+          {item.status !== 'scheduled' && (
+            <View style={[styles.statusBadge, { backgroundColor: `${status.color}20` }]}>
+              <Text style={[styles.statusText, { color: status.color }]}>{status.text}</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.specialty}>{specialtyName}</Text>
+        <View style={styles.divider} />
+        <View style={styles.appointmentInfo}>
+          <View style={styles.infoItem}>
+            <Image source={require('../assets/Iconos/calendario.png')} style={{width: 16, height: 16, marginRight: 6}} />
+            <Text style={styles.infoText}>{formattedDate}</Text>
           </View>
-        )}
-      </View>
-      <Text style={styles.specialty}>{item.specialty}</Text>
-      <View style={styles.divider} />
-      <View style={styles.appointmentInfo}>
-        <View style={styles.infoItem}>
-          <Image source={require('../assets/Iconos/calendario.png')} style={{width: 16, height: 16, marginRight: 6}} />
-          <Text style={styles.infoText}>{item.date}</Text>
+          <View style={styles.infoItem}>
+            <Ionicons name="time-outline" size={16} color="#555" />
+            <Text style={styles.infoText}>{item.startTime}</Text>
+          </View>
         </View>
-        <View style={styles.infoItem}>
-          <Ionicons name="time-outline" size={16} color="#555" />
-          <Text style={styles.infoText}>{item.time}</Text>
+        <View style={styles.buttonContainer}>
+          {item.status === 'scheduled' ? (
+            <>
+              <TouchableOpacity 
+                style={styles.rescheduleButton}
+                onPress={() => handleRescheduleAppointment(item.id)}
+              >
+                <Text style={styles.rescheduleButtonText}>Reprogramar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => handleCancel(item.id)}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity style={styles.viewDetailsButton}>
+              <Text style={styles.viewDetailsButtonText}>Ver detalles</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </View>
-      <View style={styles.buttonContainer}>
-        {item.status === 'upcoming' ? (
-          <>
-            <TouchableOpacity style={styles.rescheduleButton}>
-              <Text style={styles.rescheduleButtonText}>Reprogramar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelButton}>
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-          </>
-        ) : item.status === 'completed' ? (
-          <TouchableOpacity style={styles.viewDetailsButton}>
-            <Text style={styles.viewDetailsButtonText}>Ver detalles</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
+
+  const handleBackPress = () => {
+    setRedirectTo('/HomeScreen');
+  };
+
+  const handleNewAppointment = () => {
+    setRedirectTo('/ScheduleAppointmentScreen?fromScreen=appointments');
+  };
+
+  // Si hay una redirección pendiente, realizarla
+  if (redirectTo) {
+    return <Redirect href={redirectTo as any} />;
+  }
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
       
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Image source={require('../assets/Iconos/volver.png')} style={{width: 24, height: 24}} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Mis Citas</Text>
@@ -131,12 +186,23 @@ export default function AppointmentsScreen() {
       </View>
 
       <View style={styles.content}>
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={loadAppointments}>
+              <Text style={styles.retryButtonText}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
         <FlatList
-          data={filteredAppointments}
+          data={appointments}
           renderItem={renderAppointment}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.appointmentsList}
+          refreshing={isLoading}
+          onRefresh={loadAppointments}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Image source={require('../assets/Iconos/calendario.png')} style={{width: 50, height: 50, tintColor: '#ccc'}} />
@@ -146,7 +212,10 @@ export default function AppointmentsScreen() {
                   : 'No tienes historial de citas'}
               </Text>
               {activeTab === 'upcoming' && (
-                <TouchableOpacity style={styles.newAppointmentButton}>
+                <TouchableOpacity 
+                  style={styles.newAppointmentButton}
+                  onPress={handleNewAppointment}
+                >
                   <Text style={styles.newAppointmentButtonText}>Nueva cita</Text>
                 </TouchableOpacity>
               )}
@@ -156,7 +225,10 @@ export default function AppointmentsScreen() {
       </View>
 
       {activeTab === 'upcoming' && (
-        <TouchableOpacity style={styles.floatingButton}>
+        <TouchableOpacity 
+          style={styles.floatingButton}
+          onPress={handleNewAppointment}
+        >
           <Ionicons name="add" size={24} color="white" />
         </TouchableOpacity>
       )}
@@ -181,13 +253,13 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 5,
   },
+  headerRight: {
+    width: 34, // Para mantener el header centrado
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: 'white',
-  },
-  headerRight: {
-    width: 34, // Para mantener el header centrado
   },
   tabContainer: {
     flexDirection: 'row',
@@ -243,13 +315,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statusBadge: {
-    backgroundColor: '#FFE5E5',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   statusText: {
-    color: '#FF3B30',
     fontSize: 12,
     fontWeight: '500',
   },
@@ -352,5 +422,28 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
+  },
+  errorContainer: {
+    padding: 15,
+    backgroundColor: '#FFE5E5',
+    borderRadius: 10,
+    marginBottom: 15,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  retryButton: {
+    backgroundColor: '#FF3B30',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 }); 

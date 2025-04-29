@@ -1,11 +1,5 @@
-import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { Redirect } from 'expo-router';
 
 export default function SpecialtiesTab() {
-  useEffect(() => {
-    // Redirigir a la pantalla de especialidades
-    router.replace('/SpecialtiesScreen');
-  }, []);
-
-  return null;
+  return <Redirect href={"/SpecialtiesScreen" as any} />;
 } 

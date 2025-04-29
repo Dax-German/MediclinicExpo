@@ -1,8 +1,7 @@
-import { Picker } from '@react-native-picker/picker';
-import { router } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 /**
  * Pantalla de inicio de sesión
@@ -22,6 +21,14 @@ export default function LoginScreen() {
   const [documentNumber, setDocumentNumber] = useState('');
   const [password, setPassword] = useState('');
   const [showDocumentTypePicker, setShowDocumentTypePicker] = useState(false);
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Si hay una redirección pendiente, realizarla
+  if (redirectTo) {
+    return <Redirect href={redirectTo as any} />;
+  }
 
   /**
    * Maneja el proceso de inicio de sesión
@@ -29,7 +36,7 @@ export default function LoginScreen() {
    * Valida que todos los campos estén completos y
    * redirige al usuario a la pantalla principal si todo es correcto
    */
-  const handleLogin = () => {
+  const handleLogin = async () => {
     try {
       // Validar campos obligatorios
       if (!documentType || !documentNumber || !password) {
@@ -37,12 +44,36 @@ export default function LoginScreen() {
         return;
       }
       
+      // Resetear error previo
+      setError(null);
+      setIsLoading(true);
+      
       console.log('Intentando iniciar sesión...');
-      // TODO: Implementar lógica de autenticación con API
-      router.replace('/(tabs)');
+      
+      try {
+        // Llamada al servicio de autenticación (comentado para desarrollo)
+        /* const response = await authService.login({
+          documentType,
+          documentNumber,
+          password
+        });
+        
+        // Aquí se guardaría el token y la información del usuario
+        console.log('Login exitoso:', response); */
+        
+        // Por ahora simplemente redirigimos al usuario a la pantalla principal
+        setRedirectTo('/HomeScreen');
+      } catch (authError) {
+        // Capturamos errores de autenticación
+        console.error('Error de autenticación:', authError);
+        setError('Credenciales incorrectas. Por favor, inténtelo de nuevo.');
+      } finally {
+        setIsLoading(false);
+      }
     } catch (error) {
       console.error('Error en handleLogin:', error);
-      alert('Ocurrió un error al intentar iniciar sesión');
+      setError('Ocurrió un error al intentar iniciar sesión');
+      setIsLoading(false);
     }
   };
 
@@ -51,7 +82,7 @@ export default function LoginScreen() {
    */
   const handleForgotPassword = () => {
     try {
-      router.push('/ForgotPasswordScreen');
+      setRedirectTo('/ForgotPasswordScreen');
     } catch (error) {
       console.error('Error en handleForgotPassword:', error);
     }
@@ -63,9 +94,19 @@ export default function LoginScreen() {
   const handleRegister = () => {
     try {
       console.log('Navegando a registro...');
-      router.push('/RegisterScreen');
+      setRedirectTo('/RegisterScreen');
     } catch (error) {
       console.error('Error al navegar a registro:', error);
+    }
+  };
+
+  // Función para renderizar el texto del tipo de documento seleccionado
+  const getDocumentTypeText = () => {
+    switch(documentType) {
+      case 'cedula': return 'Cédula de Ciudadanía';
+      case 'pasaporte': return 'Pasaporte';
+      case 'ti': return 'Tarjeta de Identidad';
+      default: return 'Seleccionar tipo de documento';
     }
   };
 
@@ -94,31 +135,69 @@ export default function LoginScreen() {
           <Text style={styles.label}>Tipo de documento</Text>
           <TouchableOpacity
             style={styles.selectContainer}
-            onPress={() => setShowDocumentTypePicker(!showDocumentTypePicker)}
+            onPress={() => setShowDocumentTypePicker(true)}
           >
-            <Text style={styles.selectText}>
-              {documentType === 'cedula' ? 'Cédula de Ciudadanía' :
-               documentType === 'pasaporte' ? 'Pasaporte' :
-               documentType === 'ti' ? 'Tarjeta de Identidad' : 'Seleccionar tipo de documento'}
-            </Text>
+            <Text style={styles.selectText}>{getDocumentTypeText()}</Text>
           </TouchableOpacity>
           
-          {/* Picker desplegable para tipo de documento */}
-          {showDocumentTypePicker && (
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={documentType}
-                onValueChange={(itemValue) => {
-                  setDocumentType(itemValue);
-                  setShowDocumentTypePicker(false);
-                }}
-              >
-                <Picker.Item label="Cédula de Ciudadanía" value="cedula" />
-                <Picker.Item label="Pasaporte" value="pasaporte" />
-                <Picker.Item label="Tarjeta de Identidad" value="ti" />
-              </Picker>
-            </View>
-          )}
+          {/* Modal para el selector de tipo de documento */}
+          <Modal
+            visible={showDocumentTypePicker}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setShowDocumentTypePicker(false)}
+          >
+            <TouchableOpacity 
+              style={styles.modalOverlay} 
+              activeOpacity={1} 
+              onPress={() => setShowDocumentTypePicker(false)}
+            >
+              <View style={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>Tipo de documento</Text>
+                  
+                  <TouchableOpacity 
+                    style={styles.modalOption}
+                    onPress={() => {
+                      setDocumentType('cedula');
+                      setShowDocumentTypePicker(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.modalOptionText, 
+                      documentType === 'cedula' && styles.selectedOption
+                    ]}>Cédula de Ciudadanía</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.modalOption}
+                    onPress={() => {
+                      setDocumentType('pasaporte');
+                      setShowDocumentTypePicker(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.modalOptionText, 
+                      documentType === 'pasaporte' && styles.selectedOption
+                    ]}>Pasaporte</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.modalOption}
+                    onPress={() => {
+                      setDocumentType('ti');
+                      setShowDocumentTypePicker(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.modalOptionText, 
+                      documentType === 'ti' && styles.selectedOption
+                    ]}>Tarjeta de Identidad</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Modal>
 
           {/* Campo para número de documento */}
           <Text style={styles.label}>Número de documento</Text>
@@ -140,9 +219,20 @@ export default function LoginScreen() {
             secureTextEntry
           />
           
+          {/* Mensaje de error */}
+          {error && (
+            <Text style={styles.errorText}>{error}</Text>
+          )}
+          
           {/* Botón de inicio de sesión */}
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Ingresar</Text>
+          <TouchableOpacity 
+            style={[styles.button, isLoading && styles.buttonDisabled]} 
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            <Text style={styles.buttonText}>
+              {isLoading ? 'Iniciando sesión...' : 'Ingresar'}
+            </Text>
           </TouchableOpacity>
           
           {/* Enlace para recuperar contraseña */}
@@ -219,7 +309,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
-    fontSize: 16,
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
@@ -228,14 +317,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  // Contenedor para el picker desplegable
-  pickerContainer: {
+  // Estilos para el modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '90%',
     backgroundColor: 'white',
-    borderRadius: 10,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderRadius: 15,
     overflow: 'hidden',
+  },
+  modalContent: {
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  modalOption: {
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedOption: {
+    color: '#2D6CDF',
+    fontWeight: 'bold',
   },
   // Estilos para los campos de entrada de texto
   input: {
@@ -260,6 +376,15 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  buttonDisabled: {
+    backgroundColor: '#a0b8e0',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    marginBottom: 10,
+    textAlign: 'center',
   },
   // Botón para recuperar contraseña
   forgotPasswordButton: {

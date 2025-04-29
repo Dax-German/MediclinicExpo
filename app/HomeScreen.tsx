@@ -1,10 +1,68 @@
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Redirect, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React from 'react';
-import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// Definición del tipo para una especialidad
+interface Specialty {
+  id: string;
+  name: string;
+  icon: any; // Idealmente esto debería ser un tipo más específico para imágenes
+}
+
+// Definición del tipo para las props del componente SpecialtyCard
+interface SpecialtyCardProps {
+  specialty: Specialty;
+  onPress: () => void;
+}
+
+// Componente de tarjeta de especialidad (versión estática)
+const SpecialtyCard = ({ specialty }: { specialty: Specialty }) => {
+  return (
+    <View style={styles.specialtyCard}>
+      <View style={styles.specialtyCardContent}>
+        <Image source={specialty.icon} style={styles.specialtyIcon} resizeMode="contain" />
+        <Text style={styles.specialtyCardText}>{specialty.name}</Text>
+      </View>
+    </View>
+  );
+};
 
 export default function HomeScreen() {
+  // Estado para la redirección
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  const loadProfileImage = useCallback(async () => {
+    try {
+      const savedImage = await AsyncStorage.getItem('@MediClinic:profileImage');
+      if (savedImage) {
+        setProfileImage(savedImage);
+      }
+    } catch (error) {
+      console.error('Error al cargar imagen de perfil:', error);
+    }
+  }, []);
+
+  // Cargar imagen al montar el componente
+  useEffect(() => {
+    loadProfileImage();
+  }, [loadProfileImage]);
+  
+  // Cargar imagen cuando la pantalla obtiene el foco
+  useFocusEffect(
+    useCallback(() => {
+      loadProfileImage();
+    }, [loadProfileImage])
+  );
+
+  // Si hay una redirección pendiente, realizarla
+  if (redirectTo) {
+    return <Redirect href={redirectTo as any} />;
+  }
+
   // Especialidades según la lógica del proyecto
   const specialties = [
     { 
@@ -32,30 +90,28 @@ export default function HomeScreen() {
       name: 'Optometría',
       icon: require('../assets/Iconos/optometria.png'),
     },
+    { 
+      id: '6', 
+      name: 'Cardiología',
+      icon: require('../assets/Iconos/app-medica.png'),
+    },
+    { 
+      id: '7', 
+      name: 'Dermatología',
+      icon: require('../assets/Iconos/app-medica.png'),
+    },
   ];
-
-  const nextAppointment = {
-    doctor: 'Dr. Carlos Rodríguez',
-    specialty: 'Medicina General',
-    date: 'Hoy, 15:30',
-  };
-
-  const handleSpecialtySelection = (specialtyId: string) => {
-    router.push({
-      pathname: '../ScheduleAppointmentScreen',
-      params: { specialtyId }
-    });
-  };
-
-  const handleReserveWithDoctor = (doctorId: string) => {
-    router.push({
-      pathname: '../ScheduleAppointmentScreen',
-      params: { doctorId }
-    });
-  };
 
   const openTelegramBot = () => {
     Linking.openURL('https://t.me/mediclinic_bot'); // URL ficticio, reemplazar con el real
+  };
+
+  const handleNotificationPress = () => {
+    setRedirectTo('/AlertsScreen');
+  };
+
+  const handleProfilePress = () => {
+    setRedirectTo('/ProfileScreen');
   };
 
   return (
@@ -71,93 +127,81 @@ export default function HomeScreen() {
           </View>
           
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.notificationIcon}>
+            <TouchableOpacity 
+              style={styles.notificationIcon}
+              onPress={handleNotificationPress}
+            >
               <Ionicons name="notifications-outline" size={24} color="#333" />
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.profileIcon}
-              onPress={() => router.push('/ProfileScreen')}
+              onPress={handleProfilePress}
             >
-              <Image source={require('../assets/Iconos/app-medica.png')} style={{width: 32, height: 32}} />
+              {profileImage ? (
+                <Image source={{ uri: profileImage }} style={{width: 32, height: 32, borderRadius: 16}} />
+              ) : (
+                <Image source={require('../assets/Iconos/app-medica.png')} style={{width: 32, height: 32}} />
+              )}
             </TouchableOpacity>
           </View>
         </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Próxima Cita (como en el mockup) */}
+        {/* Sección de Citas */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Próxima Cita</Text>
-          <View style={styles.nextAppointmentCard}>
-            <View style={styles.doctorImageContainer}>
+          <Text style={styles.sectionTitle}>Citas</Text>
+          <TouchableOpacity 
+            style={styles.citasCard}
+            onPress={() => setRedirectTo('/AppointmentsScreen')}
+          >
+            <View style={styles.citasIconContainer}>
               <Image 
-                source={require('../assets/Iconos/app-medica.png')} 
-                style={styles.doctorImage}
+                source={require('../assets/Iconos/calendario.png')} 
+                style={styles.citasIcon}
               />
             </View>
-            <View style={styles.appointmentDetails}>
-              <Text style={styles.doctorName}>{nextAppointment.doctor}</Text>
-              <Text style={styles.specialty}>{nextAppointment.specialty}</Text>
-              <View style={styles.timeContainer}>
-                <Ionicons name="time-outline" size={16} color="#555" />
-                <Text style={styles.timeText}>{nextAppointment.date}</Text>
-              </View>
+            <View style={styles.citasDetails}>
+              <Text style={styles.citasTitle}>Ver mis citas</Text>
+              <Text style={styles.citasSubtitle}>Consulta tus próximas citas médicas</Text>
             </View>
-            <TouchableOpacity style={styles.viewButton}>
-              <Text style={styles.viewButtonText}>Ver</Text>
-            </TouchableOpacity>
-          </View>
+            <Ionicons name="chevron-forward" size={24} color="#888" />
+          </TouchableOpacity>
         </View>
 
         {/* Especialidades (según el mockup) */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Especialidades</Text>
-          <View style={styles.specialtiesContainer}>
-            {specialties.map((specialty) => (
-              <TouchableOpacity 
-                key={specialty.id} 
-                style={styles.specialtyItem}
-                onPress={() => handleSpecialtySelection(specialty.id)}
+          <View style={styles.specialtiesGridContainer}>
+            <View style={styles.specialtiesRow}>
+              {specialties.slice(0, 3).map((specialty) => (
+                <SpecialtyCard
+                  key={specialty.id}
+                  specialty={specialty}
+                />
+              ))}
+            </View>
+            <View style={styles.specialtiesRow}>
+              {specialties.slice(3, 5).map((specialty) => (
+                <SpecialtyCard
+                  key={specialty.id}
+                  specialty={specialty}
+                />
+              ))}
+              
+              {/* Botón de "Más Especialidades" */}
+              <Pressable
+                style={[styles.specialtyCard, {backgroundColor: '#2D6CDF'}]}
+                onPress={() => setRedirectTo('/SpecialtiesScreen')}
               >
-                <View style={styles.specialtyIconContainer}>
-                  <Image source={specialty.icon} style={styles.specialtyIcon} resizeMode="contain" />
+                <View style={styles.specialtyCardContent}>
+                  <Feather name="plus" color="white" size={22} />
+                  <Text style={[styles.specialtyCardText, {color: 'white', fontWeight: '500'}]}>
+                    Más
+                  </Text>
                 </View>
-                <Text style={styles.specialtyName}>{specialty.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Doctores Destacados (como en el mockup) */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Doctores Destacados</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>Ver todos</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.featuredDoctorCard}>
-            <View style={styles.doctorImageContainer}>
-              <Image 
-                source={require('../assets/Iconos/app-medica.png')} 
-                style={styles.doctorImage}
-              />
+              </Pressable>
             </View>
-            <View style={styles.doctorDetails}>
-              <Text style={styles.featuredDoctorName}>Dr. Carlos Rodríguez</Text>
-              <Text style={styles.featuredDoctorSpecialty}>Medicina General</Text>
-              <View style={styles.ratingContainer}>
-                <Ionicons name="star" size={16} color="#FFD700" />
-                <Text style={styles.ratingText}>4.9</Text>
-              </View>
-            </View>
-            <TouchableOpacity 
-              style={styles.reserveButton}
-              onPress={() => handleReserveWithDoctor('1')}
-            >
-              <Text style={styles.reserveButtonText}>Reservar</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -240,7 +284,16 @@ const styles = StyleSheet.create({
     color: '#2D6CDF',
     fontSize: 14,
   },
-  nextAppointmentCard: {
+  specialtiesGridContainer: {
+    paddingHorizontal: 5,
+    marginBottom: 10,
+  },
+  specialtiesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  citasCard: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 15,
@@ -252,125 +305,60 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
-  doctorImageContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  citasIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
     overflow: 'hidden',
   },
-  doctorImage: {
-    width: 50,
-    height: 50,
+  citasIcon: {
+    width: 24,
+    height: 24,
   },
-  appointmentDetails: {
+  citasDetails: {
     flex: 1,
   },
-  doctorName: {
+  citasTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#333',
   },
-  specialty: {
+  citasSubtitle: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 5,
   },
-  timeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  timeText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 5,
-  },
-  viewButton: {
-    backgroundColor: '#EDF1FA',
-    paddingVertical: 6,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-  },
-  viewButtonText: {
-    fontSize: 14,
-    color: '#2D6CDF',
-    fontWeight: '500',
-  },
-  specialtiesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  specialtyItem: {
-    width: '23%',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  specialtyIconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#EDF1FA',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  specialtyIcon: {
-    width: 35,
-    height: 35,
-  },
-  specialtyName: {
-    fontSize: 12,
-    textAlign: 'center',
-    color: '#555',
-  },
-  featuredDoctorCard: {
+  specialtyCard: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 15,
-    flexDirection: 'row',
+    padding: 8,
     alignItems: 'center',
-    elevation: 2,
+    justifyContent: 'center',
+    width: '31%',
+    aspectRatio: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
   },
-  doctorDetails: {
+  specialtyCardContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
     flex: 1,
   },
-  featuredDoctorName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  featuredDoctorSpecialty: {
-    fontSize: 14,
-    color: '#666',
+  specialtyIcon: {
+    width: 30,
+    height: 30,
     marginBottom: 5,
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 5,
-  },
-  reserveButton: {
-    backgroundColor: '#2D6CDF',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-  },
-  reserveButtonText: {
-    fontSize: 14,
-    color: 'white',
-    fontWeight: '500',
+  specialtyCardText: {
+    fontSize: 11,
+    color: '#555',
+    textAlign: 'center',
   },
   telegramButton: {
     position: 'absolute',

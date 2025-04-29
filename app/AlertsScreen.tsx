@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -16,6 +16,7 @@ type Alert = {
 };
 
 export default function AlertsScreen() {
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([
     {
       id: '1',
@@ -51,6 +52,11 @@ export default function AlertsScreen() {
     },
   ]);
 
+  // Si hay una redirección pendiente, realizarla
+  if (redirectTo) {
+    return <Redirect href={redirectTo as any} />;
+  }
+
   const getIconByType = (type: Alert['type']): IconName => {
     switch (type) {
       case 'appointment':
@@ -72,6 +78,10 @@ export default function AlertsScreen() {
         alert.id === id ? { ...alert, read: true } : alert
       )
     );
+  };
+
+  const handleBackPress = () => {
+    setRedirectTo('/HomeScreen');
   };
 
   const renderAlert = ({ item }: { item: Alert }) => (
@@ -98,7 +108,7 @@ export default function AlertsScreen() {
       <StatusBar style="light" />
       
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Alertas</Text>

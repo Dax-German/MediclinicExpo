@@ -1,11 +1,5 @@
-import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { Redirect } from 'expo-router';
 
 export default function ProfileTab() {
-  useEffect(() => {
-    // Redirigir a la pantalla de perfil
-    router.replace('/ProfileScreen');
-  }, []);
-
-  return null;
+  return <Redirect href={"/ProfileScreen" as any} />;
 } 

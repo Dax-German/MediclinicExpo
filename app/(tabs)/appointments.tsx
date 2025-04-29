@@ -1,11 +1,5 @@
-import { router } from 'expo-router';
-import { useEffect } from 'react';
+import { Redirect } from 'expo-router';
 
 export default function AppointmentsTab() {
-  useEffect(() => {
-    // Redirigir a la pantalla de citas
-    router.replace('/AppointmentsScreen');
-  }, []);
-
-  return null;
+  return <Redirect href={"/AppointmentsScreen" as any} />;
 } 
