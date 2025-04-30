@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
@@ -34,6 +34,87 @@ const SPECIALTIES = [
   { id: '8', name: 'Cardiología' },
   { id: '9', name: 'Neurología' },
   { id: '10', name: 'Ginecología' },
+];
+
+// Tipos de cita para Medicina General
+const APPOINTMENT_TYPES = [
+  { id: '1', name: 'Primera consulta: Evaluación inicial del paciente' },
+  { id: '2', name: 'Control: Seguimiento a un tratamiento o condición' },
+  { id: '3', name: 'Urgencia leve: Dolencias no graves' },
+  { id: '4', name: 'Certificados médicos: Para trabajo, estudio o actividad física' },
+  { id: '5', name: 'Cita por síntomas comunes: Gripe, dolor abdominal, alergias' },
+];
+
+// Tipos de cita para Pediatría
+const PEDIATRIC_APPOINTMENT_TYPES = [
+  { id: '1', name: 'Control de crecimiento y desarrollo: Peso, talla, hitos del desarrollo' },
+  { id: '2', name: 'Vacunación: Según el esquema del país' },
+  { id: '3', name: 'Consulta por enfermedad común: Fiebre, tos, diarrea, otitis' },
+  { id: '4', name: 'Primera consulta pediátrica: Para nuevos pacientes o recién nacidos' },
+  { id: '5', name: 'Control postvacuna o poshospitalización' },
+];
+
+// Tipos de cita para Planificación Familiar
+const PLANNING_APPOINTMENT_TYPES = [
+  { id: '1', name: 'Consulta para métodos anticonceptivos: Asesoría y prescripción' },
+  { id: '2', name: 'Control de método: Revisar efectos o cambiar método' },
+  { id: '3', name: 'Colocación/retiro de dispositivos: DIU, implante, etc.' },
+  { id: '4', name: 'Consulta preconcepcional: Asesoría para mujeres que quieren quedar embarazadas' },
+  { id: '5', name: 'Seguimiento ginecológico general' },
+];
+
+// Tipos de cita para Odontología
+const DENTAL_APPOINTMENT_TYPES = [
+  { id: '1', name: 'Primera valoración odontológica' },
+  { id: '2', name: 'Control odontológico' },
+  { id: '3', name: 'Urgencia dental: Dolor, infección, fractura' },
+  { id: '4', name: 'Limpieza dental (profilaxis)' },
+  { id: '5', name: 'Extracción, restauraciones o tratamientos específicos' },
+];
+
+// Tipos de cita para Optometría
+const OPTOMETRY_APPOINTMENT_TYPES = [
+  { id: '1', name: 'Valoración visual inicial' },
+  { id: '2', name: 'Control visual: Revisión de fórmula anterior' },
+  { id: '3', name: 'Prescripción de gafas/lentes de contacto' },
+  { id: '4', name: 'Evaluación de fatiga visual o visión borrosa' },
+  { id: '5', name: 'Detección temprana de problemas como astigmatismo, miopía' },
+];
+
+// Tipos de cita para Cardiología
+const CARDIOLOGY_APPOINTMENT_TYPES = [
+  { id: '1', name: 'Primera consulta cardiológica' },
+  { id: '2', name: 'Control de paciente con enfermedad cardíaca' },
+  { id: '3', name: 'Interpretación de exámenes (ECG, ecocardiograma, etc.)' },
+  { id: '4', name: 'Consulta por síntomas (dolor torácico, palpitaciones, hipertensión)' },
+  { id: '5', name: 'Revisión prequirúrgica cardiológica' },
+];
+
+// Tipos de cita para Dermatología
+const DERMATOLOGY_APPOINTMENT_TYPES = [
+  { id: '1', name: 'Consulta por lesiones en la piel' },
+  { id: '2', name: 'Evaluación de lunares o manchas' },
+  { id: '3', name: 'Control de tratamiento dermatológico' },
+  { id: '4', name: 'Procedimientos menores (crioterapia, biopsias)' },
+  { id: '5', name: 'Consulta por acné, dermatitis, psoriasis' },
+];
+
+// Tipos de cita para Traumatología
+const TRAUMATOLOGY_APPOINTMENT_TYPES = [
+  { id: '1', name: 'Consulta por dolor o lesión musculoesquelética' },
+  { id: '2', name: 'Control postoperatorio ortopédico' },
+  { id: '3', name: 'Valoración por fractura, esguince o luxación' },
+  { id: '4', name: 'Interpretación de radiografías u otros estudios' },
+  { id: '5', name: 'Terapia de seguimiento o referencia a fisioterapia' },
+];
+
+// Tipos de cita para Neurología
+const NEUROLOGY_APPOINTMENT_TYPES = [
+  { id: '1', name: 'Primera consulta neurológica' },
+  { id: '2', name: 'Consulta por migrañas, convulsiones, mareo, etc.' },
+  { id: '3', name: 'Seguimiento de enfermedades neurológicas crónicas (Parkinson, epilepsia)' },
+  { id: '4', name: 'Interpretación de exámenes (electroencefalograma, TAC cerebral)' },
+  { id: '5', name: 'Consulta para valoración cognitiva o demencias' },
 ];
 
 // Datos de ejemplo de doctores
@@ -81,16 +162,34 @@ export default function ScheduleAppointmentScreen() {
   const initialSpecialtyId = params.specialtyId as string;
   const initialDoctorId = params.doctorId as string;
   const fromScreen = params.fromScreen as string || 'specialties';
+  const isGeneral = params.isGeneral as string;
+  const isPediatric = params.isPediatric as string;
+  const isPlanning = params.isPlanning as string;
+  const isDental = params.isDental as string;
+  const isOptometry = params.isOptometry as string;
+  const isCardiology = params.isCardiology as string;
+  const isDermatology = params.isDermatology as string;
+  const isTraumatology = params.isTraumatology as string;
+  const isNeurology = params.isNeurology as string;
+  const appointmentId = params.appointmentId as string;
+  const skipToDateTime = params.skipToDateTime as string;
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
 
   // Estados
-  const [currentStep, setCurrentStep] = useState<'specialty' | 'doctor' | 'datetime'>(
-    initialDoctorId ? 'datetime' : initialSpecialtyId ? 'doctor' : 'specialty'
+  const [currentStep, setCurrentStep] = useState<'specialty' | 'appointmentType' | 'doctor' | 'datetime'>(
+    // Si skipToDateTime está presente, ir directamente al paso de selección de fecha y hora
+    skipToDateTime ? 'datetime' :
+    initialDoctorId ? 'datetime' : 
+    (initialSpecialtyId && (isGeneral || isPediatric || isPlanning || isDental || isOptometry || 
+      isCardiology || isDermatology || isTraumatology || isNeurology)) ? 'appointmentType' :
+    initialSpecialtyId ? 'doctor' : 'specialty'
   );
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState<string>(initialSpecialtyId || '');
+  const [selectedAppointmentType, setSelectedAppointmentType] = useState<string>('');
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [showSpecialtyPicker, setShowSpecialtyPicker] = useState(false);
+  const [showAppointmentTypePicker, setShowAppointmentTypePicker] = useState(false);
   const [availableDoctors, setAvailableDoctors] = useState<Doctor[]>([]);
   const [availableDates, setAvailableDates] = useState<string[]>([]);
 
@@ -137,6 +236,13 @@ export default function ScheduleAppointmentScreen() {
   const handleSpecialtySelect = (specialtyId: string) => {
     setSelectedSpecialtyId(specialtyId);
     setShowSpecialtyPicker(false);
+    // Todas las especialidades ahora tienen tipos de cita personalizados
+    setCurrentStep('appointmentType');
+  };
+
+  const handleAppointmentTypeSelect = (appointmentTypeId: string) => {
+    setSelectedAppointmentType(appointmentTypeId);
+    setShowAppointmentTypePicker(false);
     setCurrentStep('doctor');
   };
 
@@ -150,6 +256,12 @@ export default function ScheduleAppointmentScreen() {
   };
 
   const handleBackPress = () => {
+    // Si viene de reprogramar, volver directamente a AppointmentsScreen
+    if (skipToDateTime) {
+      setRedirectTo('/AppointmentsScreen');
+      return;
+    }
+    
     // Determinar a qué pantalla regresar según el parámetro fromScreen
     if (fromScreen === 'appointments') {
       setRedirectTo('/AppointmentsScreen');
@@ -232,6 +344,98 @@ export default function ScheduleAppointmentScreen() {
     </View>
   );
 
+  const renderAppointmentTypeStep = () => {
+    // Determinar qué tipos de citas mostrar según la especialidad seleccionada
+    let appointmentTypesData;
+    switch (selectedSpecialtyId) {
+      case '1': // General
+        appointmentTypesData = APPOINTMENT_TYPES;
+        break;
+      case '2': // Pediatría
+        appointmentTypesData = PEDIATRIC_APPOINTMENT_TYPES;
+        break;
+      case '3': // Planificación
+        appointmentTypesData = PLANNING_APPOINTMENT_TYPES;
+        break;
+      case '4': // Odontología
+        appointmentTypesData = DENTAL_APPOINTMENT_TYPES;
+        break;
+      case '5': // Optometría
+        appointmentTypesData = OPTOMETRY_APPOINTMENT_TYPES;
+        break;
+      case '6': // Dermatología
+        appointmentTypesData = DERMATOLOGY_APPOINTMENT_TYPES;
+        break;
+      case '7': // Traumatología
+        appointmentTypesData = TRAUMATOLOGY_APPOINTMENT_TYPES;
+        break;
+      case '8': // Cardiología
+        appointmentTypesData = CARDIOLOGY_APPOINTMENT_TYPES;
+        break;
+      case '9': // Neurología
+        appointmentTypesData = NEUROLOGY_APPOINTMENT_TYPES;
+        break;
+      default:
+        appointmentTypesData = APPOINTMENT_TYPES;
+    }
+
+    return (
+      <View style={styles.stepContainer}>
+        <Text style={styles.stepTitle}>Selecciona tipo de cita</Text>
+        
+        <TouchableOpacity 
+          style={styles.dropdownButton}
+          onPress={() => setShowAppointmentTypePicker(true)}
+        >
+          <Text style={styles.dropdownButtonText}>
+            {selectedAppointmentType 
+              ? appointmentTypesData.find(t => t.id === selectedAppointmentType)?.name 
+              : 'Seleccionar tipo de cita'}
+          </Text>
+          <Ionicons name="chevron-down" size={20} color="#666" />
+        </TouchableOpacity>
+
+        <Modal
+          visible={showAppointmentTypePicker}
+          transparent={true}
+          animationType="slide"
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.pickerContainer}>
+              <View style={styles.pickerHeader}>
+                <Text style={styles.pickerTitle}>Seleccionar tipo de cita</Text>
+                <TouchableOpacity onPress={() => setShowAppointmentTypePicker(false)}>
+                  <Ionicons name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={appointmentTypesData}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={styles.specialtyItem}
+                    onPress={() => handleAppointmentTypeSelect(item.id)}
+                  >
+                    <Text style={styles.specialtyItemText}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
+
+        {selectedAppointmentType && (
+          <TouchableOpacity 
+            style={styles.nextButton}
+            onPress={() => setCurrentStep('doctor')}
+          >
+            <Text style={styles.nextButtonText}>Continuar</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
   const renderDoctorStep = () => (
     <View style={styles.stepContainer}>
       <Text style={styles.stepTitle}>Selecciona un médico</Text>
@@ -268,7 +472,7 @@ export default function ScheduleAppointmentScreen() {
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => setCurrentStep('specialty')}
+          onPress={() => setCurrentStep('appointmentType')}
         >
           <Text style={styles.backButtonText}>Atrás</Text>
         </TouchableOpacity>
@@ -327,6 +531,8 @@ export default function ScheduleAppointmentScreen() {
     switch (currentStep) {
       case 'specialty':
         return renderSpecialtyStep();
+      case 'appointmentType':
+        return renderAppointmentTypeStep();
       case 'doctor':
         return renderDoctorStep();
       case 'datetime':
@@ -341,68 +547,110 @@ export default function ScheduleAppointmentScreen() {
     return <Redirect href={redirectTo as any} />;
   }
 
+  // Todas las especialidades ahora requieren paso de tipo de cita
+  const requiresAppointmentTypeStep = true;
+  
+  // Verificar si estamos reprogramando (para modificar el título)
+  const isRescheduling = skipToDateTime === 'true';
+
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <>
+      <Stack.Screen options={{ 
+        headerShown: false 
+      }} />
       
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.headerBackButton} 
-          onPress={handleBackPress}
-        >
-          <Image 
-            source={require('../assets/Iconos/volver.png')} 
-            style={{ width: 24, height: 24 }} 
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Agendar Cita</Text>
-        <View style={styles.headerRight} />
-      </View>
+      <View style={styles.container}>
+        <StatusBar style="light" />
+        
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.headerBackButton} 
+            onPress={handleBackPress}
+          >
+            <Image 
+              source={require('../assets/Iconos/volver.png')} 
+              style={{ width: 24, height: 24 }} 
+            />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
+            {isRescheduling ? 'Reprogramar Cita' : 'Agendar Cita'}
+          </Text>
+          <View style={styles.headerRight} />
+        </View>
 
-      <View style={styles.progressContainer}>
-        <View style={[
-          styles.progressStep, 
-          currentStep === 'specialty' ? styles.activeStep : 
-          (currentStep === 'doctor' || currentStep === 'datetime') ? styles.completedStep : {}
-        ]} />
-        <View style={[
-          styles.progressLine, 
-          (currentStep === 'doctor' || currentStep === 'datetime') ? styles.completedLine : {}
-        ]} />
-        <View style={[
-          styles.progressStep, 
-          currentStep === 'doctor' ? styles.activeStep : 
-          currentStep === 'datetime' ? styles.completedStep : {}
-        ]} />
-        <View style={[
-          styles.progressLine, 
-          currentStep === 'datetime' ? styles.completedLine : {}
-        ]} />
-        <View style={[
-          styles.progressStep, 
-          currentStep === 'datetime' ? styles.activeStep : {}
-        ]} />
-      </View>
+        <View style={styles.progressContainer}>
+          <View style={[
+            styles.progressStep, 
+            currentStep === 'specialty' ? styles.activeStep : 
+            (currentStep === 'appointmentType' || currentStep === 'doctor' || currentStep === 'datetime') ? styles.completedStep : {}
+          ]} />
+          <View style={[
+            styles.progressLine, 
+            (currentStep === 'appointmentType' || currentStep === 'doctor' || currentStep === 'datetime') ? styles.completedLine : {}
+          ]} />
+          
+          {requiresAppointmentTypeStep && (
+            <>
+              <View style={[
+                styles.progressStep, 
+                currentStep === 'appointmentType' ? styles.activeStep : 
+                (currentStep === 'doctor' || currentStep === 'datetime') ? styles.completedStep : {}
+              ]} />
+              <View style={[
+                styles.progressLine, 
+                (currentStep === 'doctor' || currentStep === 'datetime') ? styles.completedLine : {}
+              ]} />
+            </>
+          )}
+          
+          <View style={[
+            styles.progressStep, 
+            currentStep === 'doctor' ? styles.activeStep : 
+            currentStep === 'datetime' ? styles.completedStep : {}
+          ]} />
+          <View style={[
+            styles.progressLine, 
+            currentStep === 'datetime' ? styles.completedLine : {}
+          ]} />
+          <View style={[
+            styles.progressStep, 
+            currentStep === 'datetime' ? styles.activeStep : {}
+          ]} />
+        </View>
 
-      <View style={styles.stepLabelContainer}>
-        <Text style={[
-          styles.stepLabel, 
-          currentStep === 'specialty' ? styles.activeStepLabel : 
-          (currentStep === 'doctor' || currentStep === 'datetime') ? styles.completedStepLabel : {}
-        ]}>Especialidad</Text>
-        <Text style={[
-          styles.stepLabel, 
-          currentStep === 'doctor' ? styles.activeStepLabel : 
-          currentStep === 'datetime' ? styles.completedStepLabel : {}
-        ]}>Médico</Text>
-        <Text style={[
-          styles.stepLabel, 
-          currentStep === 'datetime' ? styles.activeStepLabel : {}
-        ]}>Fecha y hora</Text>
-      </View>
+        <View style={[styles.stepLabelContainer, { width: requiresAppointmentTypeStep ? '100%' : '75%', alignSelf: 'center' }]}>
+          <Text style={[
+            styles.stepLabel, 
+            currentStep === 'specialty' ? styles.activeStepLabel : 
+            (currentStep === 'appointmentType' || currentStep === 'doctor' || currentStep === 'datetime') ? styles.completedStepLabel : {},
+            { width: requiresAppointmentTypeStep ? '20%' : '30%' }
+          ]}>Especialidad</Text>
+          
+          {requiresAppointmentTypeStep && (
+            <Text style={[
+              styles.stepLabel, 
+              currentStep === 'appointmentType' ? styles.activeStepLabel : 
+              (currentStep === 'doctor' || currentStep === 'datetime') ? styles.completedStepLabel : {},
+              { width: '25%' }
+            ]}>Tipo de cita</Text>
+          )}
+          
+          <Text style={[
+            styles.stepLabel, 
+            currentStep === 'doctor' ? styles.activeStepLabel : 
+            currentStep === 'datetime' ? styles.completedStepLabel : {},
+            { width: requiresAppointmentTypeStep ? '20%' : '30%' }
+          ]}>Médico</Text>
+          <Text style={[
+            styles.stepLabel, 
+            currentStep === 'datetime' ? styles.activeStepLabel : {},
+            { width: requiresAppointmentTypeStep ? '20%' : '30%' }
+          ]}>Fecha y hora</Text>
+        </View>
 
-      {renderCurrentStep()}
-    </View>
+        {renderCurrentStep()}
+      </View>
+    </>
   );
 }
 
@@ -458,27 +706,6 @@ const styles = StyleSheet.create({
   },
   completedLine: {
     backgroundColor: '#65B741',
-  },
-  stepLabelContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-    backgroundColor: 'white',
-  },
-  stepLabel: {
-    fontSize: 12,
-    color: '#888',
-    textAlign: 'center',
-    width: '30%',
-  },
-  activeStepLabel: {
-    color: '#2D6CDF',
-    fontWeight: 'bold',
-  },
-  completedStepLabel: {
-    color: '#65B741',
-    fontWeight: 'bold',
   },
   stepContainer: {
     flex: 1,
@@ -659,6 +886,27 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: 'white',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  stepLabelContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    backgroundColor: 'white',
+  },
+  stepLabel: {
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center',
+    width: '30%',
+  },
+  activeStepLabel: {
+    color: '#2D6CDF',
+    fontWeight: 'bold',
+  },
+  completedStepLabel: {
+    color: '#65B741',
     fontWeight: 'bold',
   },
 }); 

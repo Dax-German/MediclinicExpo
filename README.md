@@ -27,6 +27,7 @@ npm install
 ```bash
 npm start
 npx expo start
+npx expo start --port 19000
 ```
 
 4. Escanear el código QR con la aplicación Expo Go (disponible en Google Play o App Store)
@@ -154,6 +155,8 @@ La aplicación utiliza AsyncStorage para almacenar datos localmente como:
 ### Ejecutar en Modo Desarrollo
 ```bash
 npm start
+npx expo start
+npx expo start --port 19000
 ```
 
 ### Ejecutar en Dispositivo Android
@@ -174,6 +177,33 @@ npm run reset-project
 ## Estado del Proyecto
 
 El proyecto se encuentra en fase de desarrollo activo, con nuevas características y mejoras siendo implementadas regularmente. Los servicios de backend han sido eliminados temporalmente y serán reintegrados en próximas actualizaciones.
+
+## Últimas Actualizaciones (Fecha: 22/11/2024)
+
+### Mejoras en Navegación
+- Implementación de sistema de redirección mejorado en todas las pantallas principales
+- Optimización de navegación entre pantallas utilizando `setRedirectTo` y `Redirect`
+- Arreglos en la gestión del botón de retroceso en todas las pantallas
+
+### Mejoras en Gestión de Citas
+- Añadida funcionalidad para reprogramar citas existentes sin cambio de especialidad ni doctor
+- Optimización del proceso de cancelación de citas
+- Implementación de funciones de actualización de estado de citas en `useAppointments`
+
+### Interfaz de Usuario
+- Mejoras visuales en los encabezados de todas las pantallas
+- Estandarización de estilos en componentes compartidos
+- Optimización de la visualización en diferentes tamaños de pantalla
+
+### Sistema de Almacenamiento
+- Mejoras en la gestión de datos con AsyncStorage
+- Implementación de guardado persistente de ajustes de perfil
+- Optimización del acceso a datos almacenados localmente
+
+### Rendimiento
+- Optimización de carga de componentes
+- Mejoras en monitoreo y logging de ciclo de vida de componentes
+- Ajustes para compatibilidad con diferentes versiones de plataformas
 
 
 

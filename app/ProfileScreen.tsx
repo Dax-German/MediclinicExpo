@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Redirect, useFocusEffect } from 'expo-router';
+import { Redirect, Stack, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Image, ImageSourcePropType, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -166,6 +166,10 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
+      
+      <Stack.Screen options={{ 
+        headerShown: false 
+      }} />
       
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>

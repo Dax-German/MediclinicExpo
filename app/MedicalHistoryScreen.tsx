@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
@@ -20,16 +20,7 @@ type MedicalRecord = {
   diagnosis: string;
   treatment: string;
   notes?: string;
-  prescriptions?: Prescription[];
   labResults?: LabResult[];
-};
-
-type Prescription = {
-  id: string;
-  medication: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
 };
 
 type LabResult = {
@@ -44,7 +35,6 @@ type LabResult = {
 export default function MedicalHistoryScreen() {
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
-  const [activeTab, setActiveTab] = useState<'records' | 'prescriptions' | 'labs'>('records');
 
   // Datos de ejemplo - en una implementación real vendrían de una API o almacenamiento local
   const medicalRecords: MedicalRecord[] = [
@@ -55,23 +45,7 @@ export default function MedicalHistoryScreen() {
       specialty: 'Medicina General',
       diagnosis: 'Infección respiratoria aguda',
       treatment: 'Reposo y medicación',
-      notes: 'Paciente presenta tos y congestión nasal desde hace 3 días.',
-      prescriptions: [
-        {
-          id: 'p1',
-          medication: 'Amoxicilina',
-          dosage: '500mg',
-          frequency: 'Cada 8 horas',
-          duration: '7 días'
-        },
-        {
-          id: 'p2',
-          medication: 'Acetaminofén',
-          dosage: '500mg',
-          frequency: 'Cada 6 horas si hay dolor o fiebre',
-          duration: '5 días'
-        }
-      ]
+      notes: 'Paciente presenta tos y congestión nasal desde hace 3 días.'
     },
     {
       id: '2',
@@ -148,14 +122,6 @@ export default function MedicalHistoryScreen() {
       <Text style={styles.recordDoctor}>{item.doctorName}</Text>
       <Text style={styles.recordDiagnosis}>{item.diagnosis}</Text>
       <View style={styles.recordDetail}>
-        {item.prescriptions && (
-          <View style={styles.detailBadge}>
-            <Ionicons name="medkit-outline" size={12} color="#2D6CDF" />
-            <Text style={styles.detailBadgeText}>
-              {item.prescriptions.length} prescripciones
-            </Text>
-          </View>
-        )}
         {item.labResults && (
           <View style={styles.detailBadge}>
             <Ionicons name="flask-outline" size={12} color="#2D6CDF" />
@@ -201,19 +167,6 @@ export default function MedicalHistoryScreen() {
           </View>
         )}
         
-        {selectedRecord.prescriptions && selectedRecord.prescriptions.length > 0 && (
-          <View style={styles.detailSection}>
-            <Text style={styles.detailSectionTitle}>Prescripciones</Text>
-            {selectedRecord.prescriptions.map(prescription => (
-              <View key={prescription.id} style={styles.prescriptionItem}>
-                <Text style={styles.prescriptionName}>{prescription.medication}</Text>
-                <Text style={styles.prescriptionDetail}>{prescription.dosage} - {prescription.frequency}</Text>
-                <Text style={styles.prescriptionDetail}>Duración: {prescription.duration}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-        
         {selectedRecord.labResults && selectedRecord.labResults.length > 0 && (
           <View style={styles.detailSection}>
             <Text style={styles.detailSectionTitle}>Resultados de laboratorio</Text>
@@ -244,119 +197,35 @@ export default function MedicalHistoryScreen() {
     );
   };
 
-  // Obtener todos los resultados de laboratorio
-  const allLabResults = medicalRecords
-    .filter(record => record.labResults)
-    .flatMap(record => record.labResults || []);
-
-  // Obtener todas las prescripciones
-  const allPrescriptions = medicalRecords
-    .filter(record => record.prescriptions)
-    .flatMap(record => record.prescriptions || []);
-
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
+      
+      {/* Ocultar el título de navegación nativo */}
+      <Stack.Screen options={{ 
+        headerShown: false 
+      }} />
       
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {selectedRecord ? 'Detalle de Consulta' : 'Historial Médico'}
+          {selectedRecord ? 'Detalles de Consulta' : 'Historial Médico'}
         </Text>
         <View style={styles.headerRight} />
       </View>
-
-      {!selectedRecord && (
-        <View style={styles.tabContainer}>
-          <TouchableOpacity 
-            style={[styles.tabButton, activeTab === 'records' && styles.activeTabButton]}
-            onPress={() => setActiveTab('records')}
-          >
-            <Text style={[styles.tabText, activeTab === 'records' && styles.activeTabText]}>
-              Consultas
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.tabButton, activeTab === 'prescriptions' && styles.activeTabButton]}
-            onPress={() => setActiveTab('prescriptions')}
-          >
-            <Text style={[styles.tabText, activeTab === 'prescriptions' && styles.activeTabText]}>
-              Recetas
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.tabButton, activeTab === 'labs' && styles.activeTabButton]}
-            onPress={() => setActiveTab('labs')}
-          >
-            <Text style={[styles.tabText, activeTab === 'labs' && styles.activeTabText]}>
-              Laboratorios
-            </Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       <View style={styles.content}>
         {selectedRecord ? (
           renderRecordDetail()
         ) : (
-          <>
-            {activeTab === 'records' && (
-              <FlatList
-                data={medicalRecords}
-                renderItem={renderRecordItem}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.recordsList}
-              />
-            )}
-            
-            {activeTab === 'prescriptions' && (
-              <FlatList
-                data={allPrescriptions}
-                renderItem={({ item }) => (
-                  <View style={styles.prescriptionItem}>
-                    <Text style={styles.prescriptionName}>{item.medication}</Text>
-                    <Text style={styles.prescriptionDetail}>{item.dosage} - {item.frequency}</Text>
-                    <Text style={styles.prescriptionDetail}>Duración: {item.duration}</Text>
-                  </View>
-                )}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.recordsList}
-              />
-            )}
-            
-            {activeTab === 'labs' && (
-              <FlatList
-                data={allLabResults}
-                renderItem={({ item }) => (
-                  <View style={styles.labResultItem}>
-                    <View style={styles.labResultHeader}>
-                      <Text style={styles.labResultName}>{item.name}</Text>
-                      <View style={[
-                        styles.labResultStatus, 
-                        { backgroundColor: item.status === 'normal' ? '#e6f7e6' : '#ffebee' }
-                      ]}>
-                        <Text style={[
-                          styles.labResultStatusText,
-                          { color: item.status === 'normal' ? '#4CAF50' : '#F44336' }
-                        ]}>
-                          {item.status === 'normal' ? 'Normal' : 'Anormal'}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.labResultDetail}>Fecha: {item.date}</Text>
-                    <Text style={styles.labResultDetail}>Resultado: {item.result}</Text>
-                    <Text style={styles.labResultDetail}>Rango normal: {item.normalRange}</Text>
-                  </View>
-                )}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.recordsList}
-              />
-            )}
-          </>
+          <FlatList
+            data={medicalRecords}
+            keyExtractor={(item) => item.id}
+            renderItem={renderRecordItem}
+            contentContainerStyle={styles.listContainer}
+          />
         )}
       </View>
     </View>
@@ -388,38 +257,11 @@ const styles = StyleSheet.create({
   headerRight: {
     width: 34, // Para mantener el header centrado
   },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    padding: 5,
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 10,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderRadius: 6,
-  },
-  activeTabButton: {
-    backgroundColor: '#EDF1FA',
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  activeTabText: {
-    color: '#2D6CDF',
-    fontWeight: 'bold',
-  },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
   },
-  recordsList: {
-    paddingBottom: 20,
+  listContainer: {
+    padding: 20,
   },
   recordItem: {
     backgroundColor: 'white',
@@ -453,8 +295,8 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   recordDiagnosis: {
-    fontSize: 15,
-    color: '#444',
+    fontSize: 14,
+    color: '#333',
     marginBottom: 10,
   },
   recordDetail: {
@@ -464,7 +306,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#EDF1FA',
-    paddingVertical: 3,
+    paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 12,
     marginRight: 8,
@@ -475,38 +317,45 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   detailContainer: {
+    flex: 1,
+    padding: 20,
+  },
+  detailHeader: {
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 15,
-    flex: 1,
-  },
-  detailHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     marginBottom: 15,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   detailDate: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
+    marginBottom: 5,
   },
   detailSpecialty: {
-    fontSize: 16,
-    color: '#2D6CDF',
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
   },
   detailSection: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 15,
     marginBottom: 15,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   detailLabel: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 5,
+    marginBottom: 3,
   },
   detailValue: {
     fontSize: 16,
@@ -518,53 +367,26 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 10,
   },
-  prescriptionItem: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  prescriptionName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  prescriptionDetail: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 3,
-  },
   labResultItem: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
   },
   labResultHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   labResultName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#333',
   },
   labResultStatus: {
-    paddingVertical: 2,
     paddingHorizontal: 8,
+    paddingVertical: 2,
     borderRadius: 12,
   },
   labResultStatusText: {
@@ -572,8 +394,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   labResultDetail: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
-    marginBottom: 3,
+    marginBottom: 2,
   },
 }); 

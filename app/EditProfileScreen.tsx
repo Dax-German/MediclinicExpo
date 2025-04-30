@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Redirect } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
@@ -25,6 +25,11 @@ export default function EditProfileScreen() {
   const [address, setAddress] = useState('Calle 123 #45-67');
   const [birthDate, setBirthDate] = useState('1990-01-15');
   
+  // Datos de contacto de emergencia (solo lectura)
+  const [emergencyContactName, setEmergencyContactName] = useState('María López');
+  const [emergencyContactRelation, setEmergencyContactRelation] = useState('Esposa');
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState('3009876543');
+  
   // Cargar datos del perfil
   useEffect(() => {
     const loadProfileData = async () => {
@@ -34,12 +39,18 @@ export default function EditProfileScreen() {
         const savedPhone = await AsyncStorage.getItem('@MediClinic:profilePhone');
         const savedAddress = await AsyncStorage.getItem('@MediClinic:profileAddress');
         const savedBirthDate = await AsyncStorage.getItem('@MediClinic:profileBirthDate');
+        const savedEmergencyName = await AsyncStorage.getItem('@MediClinic:emergencyContactName');
+        const savedEmergencyRelation = await AsyncStorage.getItem('@MediClinic:emergencyContactRelation');
+        const savedEmergencyPhone = await AsyncStorage.getItem('@MediClinic:emergencyContactPhone');
         
         if (savedName) setName(savedName);
         if (savedEmail) setEmail(savedEmail);
         if (savedPhone) setPhoneNumber(savedPhone);
         if (savedAddress) setAddress(savedAddress);
         if (savedBirthDate) setBirthDate(savedBirthDate);
+        if (savedEmergencyName) setEmergencyContactName(savedEmergencyName);
+        if (savedEmergencyRelation) setEmergencyContactRelation(savedEmergencyRelation);
+        if (savedEmergencyPhone) setEmergencyContactPhone(savedEmergencyPhone);
       } catch (error) {
         console.error('Error al cargar datos del perfil:', error);
       }
@@ -59,12 +70,9 @@ export default function EditProfileScreen() {
 
   const handleSaveChanges = async () => {
     try {
-      // Guardar los datos en AsyncStorage
-      await AsyncStorage.setItem('@MediClinic:profileName', name);
-      await AsyncStorage.setItem('@MediClinic:profileEmail', email);
+      // Guardar solo los datos que se pueden editar en AsyncStorage
       await AsyncStorage.setItem('@MediClinic:profilePhone', phoneNumber);
       await AsyncStorage.setItem('@MediClinic:profileAddress', address);
-      await AsyncStorage.setItem('@MediClinic:profileBirthDate', birthDate);
       
       Alert.alert(
         'Cambios guardados',
@@ -86,6 +94,10 @@ export default function EditProfileScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
       
+      <Stack.Screen options={{ 
+        headerShown: false 
+      }} />
+      
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="white" />
@@ -100,26 +112,30 @@ export default function EditProfileScreen() {
       >
         <ScrollView style={styles.content}>
           <View style={styles.formContainer}>
+            <Text style={styles.sectionTitle}>Información Personal</Text>
+            
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Nombre completo</Text>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, styles.disabledInput]}
                 value={name}
-                onChangeText={setName}
+                editable={false}
                 placeholder="Nombre completo"
               />
+              <Text style={styles.disabledFieldHint}>Este campo no se puede editar</Text>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Correo electrónico</Text>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, styles.disabledInput]}
                 value={email}
-                onChangeText={setEmail}
+                editable={false}
                 placeholder="Correo electrónico"
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
+              <Text style={styles.disabledFieldHint}>Este campo no se puede editar</Text>
             </View>
 
             <View style={styles.inputGroup}>
@@ -146,12 +162,51 @@ export default function EditProfileScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Fecha de nacimiento</Text>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, styles.disabledInput]}
                 value={birthDate}
-                onChangeText={setBirthDate}
+                editable={false}
                 placeholder="AAAA-MM-DD"
               />
+              <Text style={styles.disabledFieldHint}>Este campo no se puede editar</Text>
             </View>
+          </View>
+          
+          <View style={styles.formContainer}>
+            <Text style={styles.sectionTitle}>Contacto de Emergencia</Text>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Nombre</Text>
+              <TextInput
+                style={[styles.textInput, styles.disabledInput]}
+                value={emergencyContactName}
+                editable={false}
+                placeholder="Nombre del contacto"
+              />
+            </View>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Relación</Text>
+              <TextInput
+                style={[styles.textInput, styles.disabledInput]}
+                value={emergencyContactRelation}
+                editable={false}
+                placeholder="Relación con el contacto"
+              />
+            </View>
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Teléfono</Text>
+              <TextInput
+                style={[styles.textInput, styles.disabledInput]}
+                value={emergencyContactPhone}
+                editable={false}
+                placeholder="Teléfono del contacto"
+              />
+            </View>
+            
+            <Text style={styles.emergencyContactNote}>
+              Para modificar el contacto de emergencia, por favor comuníquese con servicio al cliente.
+            </Text>
           </View>
         </ScrollView>
 
@@ -218,6 +273,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+  },
   inputGroup: {
     marginBottom: 20,
   },
@@ -234,6 +295,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+  },
+  disabledInput: {
+    backgroundColor: '#f0f0f0',
+    color: '#777',
+  },
+  disabledFieldHint: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 5,
+    fontStyle: 'italic',
+  },
+  emergencyContactNote: {
+    fontSize: 12,
+    color: '#888',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 10,
   },
   bottomContainer: {
     flexDirection: 'row',

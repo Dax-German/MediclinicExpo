@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -14,7 +14,6 @@ type Specialty = {
 };
 
 export default function SpecialtiesScreen() {
-  const [searchQuery, setSearchQuery] = useState('');
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
 
   // Si hay una redirección pendiente, realizarla
@@ -24,62 +23,49 @@ export default function SpecialtiesScreen() {
 
   const specialties: Specialty[] = [
     {
-      id: '1',
+      id: '8',
       name: 'Cardiología',
       icon: 'heart-outline',
       description: 'Especialidad médica que se ocupa del diagnóstico y tratamiento de las enfermedades del corazón.',
     },
     {
-      id: '2',
+      id: '6',
       name: 'Dermatología',
       icon: 'body-outline',
       description: 'Especialidad médica encargada del estudio de la piel, su estructura, función y enfermedades.',
     },
     {
-      id: '3',
-      name: 'Pediatría',
-      icon: 'people-outline',
-      description: 'Rama de la medicina que se especializa en la salud y enfermedades de los niños.',
-    },
-    {
-      id: '4',
+      id: '7',
       name: 'Traumatología',
       icon: 'fitness-outline',
       description: 'Especialidad médica que trata lesiones del sistema músculo-esquelético.',
     },
     {
-      id: '5',
-      name: 'Oftalmología',
-      icon: 'eye-outline',
-      description: 'Especialidad médica que estudia y trata las enfermedades de los ojos.',
-    },
-    {
-      id: '6',
+      id: '9',
       name: 'Neurología',
       icon: 'medical-outline',
       description: 'Especialidad médica que trata los trastornos del sistema nervioso.',
     },
-    {
-      id: '7',
-      name: 'Odontología',
-      icon: 'medical-outline',
-      description: 'Especialidad que se ocupa del diagnóstico, tratamiento y prevención de enfermedades bucales.',
-    },
-    {
-      id: '8',
-      name: 'Ginecología',
-      icon: 'woman-outline',
-      description: 'Especialidad médica de la medicina que se ocupa del sistema reproductor femenino.',
-    },
   ];
 
-  const filteredSpecialties = searchQuery
-    ? specialties.filter(specialty => 
-        specialty.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : specialties;
-
   const renderSpecialty = ({ item }: { item: Specialty }) => (
-    <View style={styles.specialtyCard}>
+    <TouchableOpacity 
+      style={styles.specialtyCard}
+      onPress={() => {
+        // Añadir parámetros específicos según la especialidad
+        if (item.id === '8') { // Cardiología
+          setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${item.id}&isCardiology=true`);
+        } else if (item.id === '6') { // Dermatología
+          setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${item.id}&isDermatology=true`);
+        } else if (item.id === '7') { // Traumatología
+          setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${item.id}&isTraumatology=true`);
+        } else if (item.id === '9') { // Neurología
+          setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${item.id}&isNeurology=true`);
+        } else {
+          setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${item.id}`);
+        }
+      }}
+    >
       <View style={styles.specialtyIconContainer}>
         <Ionicons name={item.icon} size={28} color="#2D6CDF" />
       </View>
@@ -90,12 +76,8 @@ export default function SpecialtiesScreen() {
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color="#888" />
-    </View>
+    </TouchableOpacity>
   );
-
-  const handleScheduleAppointment = () => {
-    setRedirectTo('/ScheduleAppointmentScreen?fromScreen=specialties');
-  };
 
   const handleBackPress = () => {
     setRedirectTo('/HomeScreen');
@@ -114,44 +96,14 @@ export default function SpecialtiesScreen() {
       </View>
 
       <View style={styles.content}>
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="#888" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar especialidad"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholderTextColor="#888"
-          />
-          {searchQuery !== '' && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-              <Ionicons name="close-circle" size={20} color="#888" />
-            </TouchableOpacity>
-          )}
-        </View>
-
         <FlatList
-          data={filteredSpecialties}
+          data={specialties}
           renderItem={renderSpecialty}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.specialtiesList}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="search-outline" size={50} color="#ccc" />
-              <Text style={styles.emptyStateText}>
-                No se encontraron especialidades
-              </Text>
-            </View>
-          }
         />
       </View>
-
-      {/* Botón flotante para agendar cita */}
-      <TouchableOpacity style={styles.floatingButton} onPress={handleScheduleAppointment}>
-        <Ionicons name="calendar" size={24} color="white" />
-        <Text style={styles.floatingButtonText}>Agendar Cita</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -184,31 +136,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    height: 50,
-    fontSize: 16,
-    color: '#333',
-  },
-  clearButton: {
-    padding: 5,
   },
   specialtiesList: {
     paddingBottom: 20,
@@ -246,37 +173,5 @@ const styles = StyleSheet.create({
   specialtyDescription: {
     fontSize: 14,
     color: '#666',
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 50,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#777',
-    marginTop: 10,
-  },
-  floatingButton: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    backgroundColor: '#2D6CDF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 30,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-  },
-  floatingButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    marginLeft: 8,
   },
 }); 

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -11,7 +11,7 @@ type Alert = {
   title: string;
   message: string;
   date: string;
-  type: 'appointment' | 'medication' | 'result' | 'general';
+  type: 'appointment';
   read: boolean;
 };
 
@@ -26,30 +26,6 @@ export default function AlertsScreen() {
       type: 'appointment',
       read: false,
     },
-    {
-      id: '2',
-      title: 'Resultados disponibles',
-      message: 'Tus resultados de laboratorio ya están disponibles para consulta.',
-      date: '30/03/2024',
-      type: 'result',
-      read: false,
-    },
-    {
-      id: '3',
-      title: 'Recordatorio de medicación',
-      message: 'No olvides tomar tu medicación diaria.',
-      date: '28/03/2024',
-      type: 'medication',
-      read: true,
-    },
-    {
-      id: '4',
-      title: 'Información general',
-      message: 'Nuevos horarios de atención durante Semana Santa.',
-      date: '25/03/2024',
-      type: 'general',
-      read: true,
-    },
   ]);
 
   // Si hay una redirección pendiente, realizarla
@@ -58,18 +34,7 @@ export default function AlertsScreen() {
   }
 
   const getIconByType = (type: Alert['type']): IconName => {
-    switch (type) {
-      case 'appointment':
-        return 'calendar-outline';
-      case 'medication':
-        return 'medkit-outline';
-      case 'result':
-        return 'document-text-outline';
-      case 'general':
-        return 'information-circle-outline';
-      default:
-        return 'notifications-outline';
-    }
+    return 'calendar-outline';
   };
 
   const markAsRead = (id: string) => {
@@ -104,42 +69,49 @@ export default function AlertsScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <>
+      {/* Ocultar el título de navegación nativo */}
+      <Stack.Screen options={{ 
+        headerShown: false 
+      }} />
       
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Alertas</Text>
-        <View style={styles.headerRight} />
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.alertsHeader}>
-          <Text style={styles.alertsCount}>
-            {alerts.filter(a => !a.read).length} no leídas
-          </Text>
-          <TouchableOpacity onPress={() => setAlerts(alerts.map(a => ({ ...a, read: true })))}>
-            <Text style={styles.markAllRead}>Marcar todas como leídas</Text>
+      <View style={styles.container}>
+        <StatusBar style="light" />
+        
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Alertas</Text>
+          <View style={styles.headerRight} />
         </View>
 
-        <FlatList
-          data={alerts}
-          renderItem={renderAlert}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.alertsList}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Ionicons name="notifications-off-outline" size={50} color="#ccc" />
-              <Text style={styles.emptyStateText}>No tienes alertas</Text>
-            </View>
-          }
-        />
+        <View style={styles.content}>
+          <View style={styles.alertsHeader}>
+            <Text style={styles.alertsCount}>
+              {alerts.filter(a => !a.read).length} no leídas
+            </Text>
+            <TouchableOpacity onPress={() => setAlerts(alerts.map(a => ({ ...a, read: true })))}>
+              <Text style={styles.markAllRead}>Marcar todas como leídas</Text>
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={alerts}
+            renderItem={renderAlert}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.alertsList}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="notifications-off-outline" size={50} color="#ccc" />
+                <Text style={styles.emptyStateText}>No tienes alertas</Text>
+              </View>
+            }
+          />
+        </View>
       </View>
-    </View>
+    </>
   );
 }
 

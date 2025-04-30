@@ -19,14 +19,14 @@ interface SpecialtyCardProps {
 }
 
 // Componente de tarjeta de especialidad (versión estática)
-const SpecialtyCard = ({ specialty }: { specialty: Specialty }) => {
+const SpecialtyCard = ({ specialty, onPress }: SpecialtyCardProps) => {
   return (
-    <View style={styles.specialtyCard}>
+    <TouchableOpacity style={styles.specialtyCard} onPress={onPress}>
       <View style={styles.specialtyCardContent}>
         <Image source={specialty.icon} style={styles.specialtyIcon} resizeMode="contain" />
         <Text style={styles.specialtyCardText}>{specialty.name}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -178,6 +178,17 @@ export default function HomeScreen() {
                 <SpecialtyCard
                   key={specialty.id}
                   specialty={specialty}
+                  onPress={() => {
+                    if (specialty.id === '1') { // Para General
+                      setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${specialty.id}&isGeneral=true`);
+                    } else if (specialty.id === '2') { // Para Pediatría
+                      setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${specialty.id}&isPediatric=true`);
+                    } else if (specialty.id === '3') { // Para Planificación
+                      setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${specialty.id}&isPlanning=true`);
+                    } else {
+                      setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${specialty.id}`);
+                    }
+                  }}
                 />
               ))}
             </View>
@@ -186,6 +197,15 @@ export default function HomeScreen() {
                 <SpecialtyCard
                   key={specialty.id}
                   specialty={specialty}
+                  onPress={() => {
+                    if (specialty.id === '4') { // Para Odontología
+                      setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${specialty.id}&isDental=true`);
+                    } else if (specialty.id === '5') { // Para Optometría
+                      setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${specialty.id}&isOptometry=true`);
+                    } else {
+                      setRedirectTo(`/ScheduleAppointmentScreen?specialtyId=${specialty.id}`);
+                    }
+                  }}
                 />
               ))}
               

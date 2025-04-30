@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Redirect } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -101,6 +101,11 @@ export default function PersonalInfoScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
+      
+      {/* Ocultar el título de navegación nativo */}
+      <Stack.Screen options={{ 
+        headerShown: false 
+      }} />
       
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>

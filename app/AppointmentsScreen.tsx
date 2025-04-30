@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -43,9 +43,12 @@ export default function AppointmentsScreen() {
 
   /**
    * Maneja la reprogramación de una cita
+   * Ahora envía todos los datos necesarios para que no se pueda cambiar especialidad ni doctor
    */
-  const handleRescheduleAppointment = (id: string) => {
-    setRedirectTo(`/ScheduleAppointmentScreen?appointmentId=${id}`);
+  const handleRescheduleAppointment = (appointment: Appointment) => {
+    setRedirectTo(
+      `/ScheduleAppointmentScreen?appointmentId=${appointment.id}&specialtyId=${appointment.specialty?.id}&doctorId=${appointment.doctor?.id}&skipToDateTime=true`
+    );
   };
 
   /**
@@ -92,16 +95,17 @@ export default function AppointmentsScreen() {
       month: 'long',
       year: 'numeric'
     });
+    
+    // Mostrar duración solo para citas completadas
+    const appointmentDuration = item.duration ? `Duración: ${item.duration} min` : '';
 
     return (
       <TouchableOpacity style={styles.appointmentCard}>
         <View style={styles.appointmentHeader}>
           <Text style={styles.doctorName}>{doctorName}</Text>
-          {item.status !== 'scheduled' && (
-            <View style={[styles.statusBadge, { backgroundColor: `${status.color}20` }]}>
-              <Text style={[styles.statusText, { color: status.color }]}>{status.text}</Text>
-            </View>
-          )}
+          <View style={[styles.statusBadge, { backgroundColor: `${status.color}20` }]}>
+            <Text style={[styles.statusText, { color: status.color }]}>{status.text}</Text>
+          </View>
         </View>
         <Text style={styles.specialty}>{specialtyName}</Text>
         <View style={styles.divider} />
@@ -114,13 +118,19 @@ export default function AppointmentsScreen() {
             <Ionicons name="time-outline" size={16} color="#555" />
             <Text style={styles.infoText}>{item.startTime}</Text>
           </View>
+          {activeTab === 'history' && item.status === 'completed' && (
+            <View style={styles.infoItem}>
+              <Ionicons name="hourglass-outline" size={16} color="#555" />
+              <Text style={styles.infoText}>{appointmentDuration}</Text>
+            </View>
+          )}
         </View>
         <View style={styles.buttonContainer}>
           {item.status === 'scheduled' ? (
             <>
               <TouchableOpacity 
                 style={styles.rescheduleButton}
-                onPress={() => handleRescheduleAppointment(item.id)}
+                onPress={() => handleRescheduleAppointment(item)}
               >
                 <Text style={styles.rescheduleButtonText}>Reprogramar</Text>
               </TouchableOpacity>
@@ -132,9 +142,7 @@ export default function AppointmentsScreen() {
               </TouchableOpacity>
             </>
           ) : (
-            <TouchableOpacity style={styles.viewDetailsButton}>
-              <Text style={styles.viewDetailsButtonText}>Ver detalles</Text>
-            </TouchableOpacity>
+            <View />
           )}
         </View>
       </TouchableOpacity>
@@ -155,84 +163,82 @@ export default function AppointmentsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
+    <>
+      {/* Ocultar el título de navegación nativo */}
+      <Stack.Screen options={{ 
+        headerShown: false 
+      }} />
       
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <Image source={require('../assets/Iconos/volver.png')} style={{width: 24, height: 24}} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Mis Citas</Text>
-        <View style={styles.headerRight} />
-      </View>
-
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
-          onPress={() => setActiveTab('upcoming')}
-        >
-          <Text style={[styles.tabText, activeTab === 'upcoming' && styles.activeTabText]}>
-            Próximas
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'history' && styles.activeTab]}
-          onPress={() => setActiveTab('history')}
-        >
-          <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
-            Historial
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.content}>
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={loadAppointments}>
-              <Text style={styles.retryButtonText}>Reintentar</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+      <View style={styles.container}>
+        <StatusBar style="light" />
         
-        <FlatList
-          data={appointments}
-          renderItem={renderAppointment}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.appointmentsList}
-          refreshing={isLoading}
-          onRefresh={loadAppointments}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Image source={require('../assets/Iconos/calendario.png')} style={{width: 50, height: 50, tintColor: '#ccc'}} />
-              <Text style={styles.emptyStateText}>
-                {activeTab === 'upcoming' 
-                  ? 'No tienes citas programadas' 
-                  : 'No tienes historial de citas'}
-              </Text>
-              {activeTab === 'upcoming' && (
-                <TouchableOpacity 
-                  style={styles.newAppointmentButton}
-                  onPress={handleNewAppointment}
-                >
-                  <Text style={styles.newAppointmentButtonText}>Nueva cita</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          }
-        />
-      </View>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
+            <Image source={require('../assets/Iconos/volver.png')} style={{width: 24, height: 24}} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Mis Citas</Text>
+          <View style={styles.headerRight} />
+        </View>
 
-      {activeTab === 'upcoming' && (
-        <TouchableOpacity 
-          style={styles.floatingButton}
-          onPress={handleNewAppointment}
-        >
-          <Ionicons name="add" size={24} color="white" />
-        </TouchableOpacity>
-      )}
-    </View>
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
+            onPress={() => setActiveTab('upcoming')}
+          >
+            <Text style={[styles.tabText, activeTab === 'upcoming' && styles.activeTabText]}>
+              Próximas
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'history' && styles.activeTab]}
+            onPress={() => setActiveTab('history')}
+          >
+            <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
+              Historial
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.content}>
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={loadAppointments}>
+                <Text style={styles.retryButtonText}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          <FlatList
+            data={appointments}
+            renderItem={renderAppointment}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.appointmentsList}
+            refreshing={isLoading}
+            onRefresh={loadAppointments}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Image source={require('../assets/Iconos/calendario.png')} style={{width: 50, height: 50, tintColor: '#ccc'}} />
+                <Text style={styles.emptyStateText}>
+                  {activeTab === 'upcoming' 
+                    ? 'No tienes citas programadas' 
+                    : 'No tienes historial de citas'}
+                </Text>
+                {activeTab === 'upcoming' && (
+                  <TouchableOpacity 
+                    style={styles.newAppointmentButton}
+                    onPress={handleNewAppointment}
+                  >
+                    <Text style={styles.newAppointmentButtonText}>Nueva cita</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            }
+          />
+        </View>
+      </View>
+    </>
   );
 }
 
@@ -406,22 +412,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: 'bold',
-  },
-  floatingButton: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    right: 20,
-    bottom: 20,
-    backgroundColor: '#2D6CDF',
-    borderRadius: 30,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
   },
   errorContainer: {
     padding: 15,
