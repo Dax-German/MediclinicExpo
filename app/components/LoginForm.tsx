@@ -1,18 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import apiServices from '../../src/api/services';
+import { DOCUMENT_TYPES, getDocumentTypeText } from '../../src/constants/documentTypes';
 
 // Definir los tipos localmente ya que no se pueden importar de services
 interface LoginCredentials {
@@ -31,7 +32,7 @@ const LoginForm = ({ onSuccess, onForgotPassword, onRegister }: LoginFormProps) 
   const router = useRouter();
   
   // Estados para los campos del formulario
-  const [documentType, setDocumentType] = useState('cedula');
+  const [documentType, setDocumentType] = useState(DOCUMENT_TYPES.CITIZENSHIP_CARD);
   const [documentNumber, setDocumentNumber] = useState('');
   const [password, setPassword] = useState('');
   const [showDocumentTypePicker, setShowDocumentTypePicker] = useState(false);
@@ -40,6 +41,12 @@ const LoginForm = ({ onSuccess, onForgotPassword, onRegister }: LoginFormProps) 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Depuración de los valores de documento al iniciar
+  useEffect(() => {
+    console.log('Valores de DOCUMENT_TYPES:', JSON.stringify(DOCUMENT_TYPES, null, 2));
+    console.log('Valor inicial de documentType:', documentType);
+  }, []);
 
   // Función para manejar el inicio de sesión
   const handleLogin = async () => {
@@ -61,8 +68,14 @@ const LoginForm = ({ onSuccess, onForgotPassword, onRegister }: LoginFormProps) 
         password
       };
       
+      // Log para depurar
+      console.log('Intentando login con credenciales:', JSON.stringify(credentials, null, 2));
+      
       // Llamar al servicio de autenticación
       const response = await apiServices.auth.login(credentials);
+      
+      // Log para depurar
+      console.log('Respuesta de login:', JSON.stringify(response, null, 2));
       
       // Almacenar el token y datos de usuario
       if (response && response.token) {
@@ -73,8 +86,33 @@ const LoginForm = ({ onSuccess, onForgotPassword, onRegister }: LoginFormProps) 
         }
         
         if (response.user) {
+          console.log('Guardando datos del usuario en AsyncStorage:', JSON.stringify(response.user, null, 2));
           await AsyncStorage.setItem('@MediClinic:user', JSON.stringify(response.user));
+          
+          // Guardar también datos en claves individuales para compatibilidad
+          if (response.user.firstName && response.user.lastName) {
+            const fullName = `${response.user.firstName} ${response.user.lastName}`;
+            await AsyncStorage.setItem('@MediClinic:profileName', fullName);
+          } else if (response.user.name) {
+            await AsyncStorage.setItem('@MediClinic:profileName', response.user.name);
+          }
+          
+          if (response.user.email) {
+            await AsyncStorage.setItem('@MediClinic:profileEmail', response.user.email);
+          }
+          
+          if (response.user.phone) {
+            await AsyncStorage.setItem('@MediClinic:profilePhone', response.user.phone);
+          }
+          
+          if (response.user.address) {
+            await AsyncStorage.setItem('@MediClinic:profileAddress', response.user.address);
+          }
         }
+        
+        // Comprobar datos guardados
+        const savedUser = await AsyncStorage.getItem('@MediClinic:user');
+        console.log('Usuario guardado en AsyncStorage:', savedUser);
         
         // Redireccionar o ejecutar callback
         if (onSuccess) {
@@ -85,9 +123,23 @@ const LoginForm = ({ onSuccess, onForgotPassword, onRegister }: LoginFormProps) 
       } else {
         throw new Error('Respuesta inválida del servidor');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al iniciar sesión:', error);
-      setError('Credenciales incorrectas. Por favor, inténtelo de nuevo.');
+      // Mostrar detalles del error para depuración
+      if (error.data) {
+        console.error('Detalles del error:', JSON.stringify(error.data, null, 2));
+      }
+      
+      // Mostrar un mensaje de error más informativo
+      let errorMessage = 'Credenciales incorrectas. Por favor, inténtelo de nuevo.';
+      if (error.message) {
+        errorMessage = `Error: ${error.message}`;
+        if (error.data && error.data.message) {
+          errorMessage += ` (${error.data.message})`;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -108,16 +160,6 @@ const LoginForm = ({ onSuccess, onForgotPassword, onRegister }: LoginFormProps) 
       onRegister();
     } else {
       router.push('/RegisterScreen');
-    }
-  };
-
-  // Función para renderizar el texto del tipo de documento seleccionado
-  const getDocumentTypeText = () => {
-    switch(documentType) {
-      case 'cedula': return 'Cédula de Ciudadanía';
-      case 'pasaporte': return 'Pasaporte';
-      case 'ti': return 'Tarjeta de Identidad';
-      default: return 'Seleccionar tipo de documento';
     }
   };
 
@@ -142,7 +184,7 @@ const LoginForm = ({ onSuccess, onForgotPassword, onRegister }: LoginFormProps) 
         style={styles.selectContainer}
         onPress={() => setShowDocumentTypePicker(true)}
       >
-        <Text style={styles.selectText}>{getDocumentTypeText()}</Text>
+        <Text style={styles.selectText}>{getDocumentTypeText(documentType)}</Text>
       </TouchableOpacity>
       
       {/* Modal para seleccionar tipo de documento */}
@@ -164,39 +206,52 @@ const LoginForm = ({ onSuccess, onForgotPassword, onRegister }: LoginFormProps) 
               <TouchableOpacity 
                 style={styles.modalOption}
                 onPress={() => {
-                  setDocumentType('cedula');
+                  setDocumentType(DOCUMENT_TYPES.CITIZENSHIP_CARD);
                   setShowDocumentTypePicker(false);
                 }}
               >
                 <Text style={[
                   styles.modalOptionText, 
-                  documentType === 'cedula' && styles.selectedOption
+                  documentType === DOCUMENT_TYPES.CITIZENSHIP_CARD && styles.selectedOption
                 ]}>Cédula de Ciudadanía</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.modalOption}
                 onPress={() => {
-                  setDocumentType('pasaporte');
+                  setDocumentType(DOCUMENT_TYPES.FOREIGNERS_ID_CARD);
                   setShowDocumentTypePicker(false);
                 }}
               >
                 <Text style={[
                   styles.modalOptionText, 
-                  documentType === 'pasaporte' && styles.selectedOption
+                  documentType === DOCUMENT_TYPES.FOREIGNERS_ID_CARD && styles.selectedOption
+                ]}>Cédula de Extranjería</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.modalOption}
+                onPress={() => {
+                  setDocumentType(DOCUMENT_TYPES.PASSPORT);
+                  setShowDocumentTypePicker(false);
+                }}
+              >
+                <Text style={[
+                  styles.modalOptionText, 
+                  documentType === DOCUMENT_TYPES.PASSPORT && styles.selectedOption
                 ]}>Pasaporte</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.modalOption}
                 onPress={() => {
-                  setDocumentType('ti');
+                  setDocumentType(DOCUMENT_TYPES.IDENTITY_CARD);
                   setShowDocumentTypePicker(false);
                 }}
               >
                 <Text style={[
                   styles.modalOptionText, 
-                  documentType === 'ti' && styles.selectedOption
+                  documentType === DOCUMENT_TYPES.IDENTITY_CARD && styles.selectedOption
                 ]}>Tarjeta de Identidad</Text>
               </TouchableOpacity>
             </View>

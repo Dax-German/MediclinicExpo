@@ -21,6 +21,11 @@ export interface RegisterUserData {
   passwordConfirmation: string;
   phone?: string;
   address?: string;
+  gender: string;
+  role?: string;
+  defaultSchedule?: boolean;
+  specialtyId?: number;
+  physicalLocationId?: number;
 }
 
 export interface ResetPasswordData {
@@ -63,7 +68,11 @@ class AuthService {
    */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
+      console.log('AuthService.login - Enviando credenciales al servidor:', JSON.stringify(credentials, null, 2));
+      
       const response = await apiClient.post<AuthResponse, AuthResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials);
+      
+      console.log('AuthService.login - Respuesta recibida del servidor');
       
       // Guardar tokens y datos básicos del usuario en AsyncStorage
       if (response.token) {
@@ -80,6 +89,7 @@ class AuthService {
       
       return response;
     } catch (error) {
+      console.error('AuthService.login - Error al intentar iniciar sesión:', error);
       throw error;
     }
   }
@@ -167,12 +177,25 @@ class AuthService {
    */
   async logout(): Promise<void> {
     try {
+      console.log('AuthService.logout - Iniciando cierre de sesión');
+      
+      // Obtener todas las claves
+      const allKeys = await AsyncStorage.getAllKeys();
+      
+      // Identificar claves relacionadas con la sesión y el perfil
+      const keysToRemove = allKeys.filter(key => 
+        key.startsWith('@MediClinic:') && 
+        (key.includes('Token') || 
+         key.includes('user') || 
+         key.includes('profile'))
+      );
+      
+      console.log('AuthService.logout - Claves a eliminar:', keysToRemove);
+      
       // Limpiar datos de sesión en AsyncStorage
-      await AsyncStorage.multiRemove([
-        '@MediClinic:authToken',
-        '@MediClinic:refreshToken',
-        '@MediClinic:user'
-      ]);
+      if (keysToRemove.length > 0) {
+        await AsyncStorage.multiRemove(keysToRemove);
+      }
       
       // Opcionalmente, notificar al backend sobre el cierre de sesión
       // No hacemos nada con la respuesta, lo importante es limpiar localmente
@@ -181,6 +204,8 @@ class AuthService {
       } catch (logoutError) {
         console.warn('Error al notificar logout al servidor:', logoutError);
       }
+      
+      console.log('AuthService.logout - Sesión cerrada correctamente');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       throw error;

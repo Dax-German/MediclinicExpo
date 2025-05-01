@@ -48,7 +48,30 @@ export default function PersonalInfoScreen() {
   useEffect(() => {
     const loadProfileData = async () => {
       try {
-        // Cargar información personal básica
+        // Intentar cargar datos del usuario autenticado primero
+        const userJson = await AsyncStorage.getItem('@MediClinic:user');
+        
+        if (userJson) {
+          const userData = JSON.parse(userJson);
+          
+          // Actualizar información personal con datos del usuario
+          setPersonalInfo(prevInfo => ({
+            ...prevInfo,
+            name: userData.firstName && userData.lastName ? 
+              `${userData.firstName} ${userData.lastName}` : 
+              userData.name || prevInfo.name,
+            email: userData.email || prevInfo.email,
+            phone: userData.phone || prevInfo.phone,
+            address: userData.address || prevInfo.address,
+            documentType: userData.documentType || prevInfo.documentType,
+            documentNumber: userData.documentNumber || prevInfo.documentNumber,
+            gender: userData.gender || prevInfo.gender,
+          }));
+          
+          return; // Salir temprano si encontramos datos de usuario
+        }
+        
+        // Compatibilidad con método anterior (claves separadas)
         const savedName = await AsyncStorage.getItem('@MediClinic:profileName');
         const savedEmail = await AsyncStorage.getItem('@MediClinic:profileEmail');
         const savedPhone = await AsyncStorage.getItem('@MediClinic:profilePhone');

@@ -4,36 +4,71 @@ import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 export default function EditProfileScreen() {
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
   
   // Estado para los campos del formulario
-  const [name, setName] = useState('Juan García');
-  const [email, setEmail] = useState('juangarcia@gmail.com');
-  const [phoneNumber, setPhoneNumber] = useState('3001234567');
-  const [address, setAddress] = useState('Calle 123 #45-67');
-  const [birthDate, setBirthDate] = useState('1990-01-15');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [address, setAddress] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   
   // Datos de contacto de emergencia (solo lectura)
-  const [emergencyContactName, setEmergencyContactName] = useState('María López');
-  const [emergencyContactRelation, setEmergencyContactRelation] = useState('Esposa');
-  const [emergencyContactPhone, setEmergencyContactPhone] = useState('3009876543');
+  const [emergencyContactName, setEmergencyContactName] = useState('');
+  const [emergencyContactRelation, setEmergencyContactRelation] = useState('');
+  const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
+  
+  // Datos originales del usuario para actualizaciones
+  const [userData, setUserData] = useState<any>(null);
   
   // Cargar datos del perfil
   useEffect(() => {
     const loadProfileData = async () => {
       try {
+        // Primero intentar cargar datos del usuario autenticado
+        const userJson = await AsyncStorage.getItem('@MediClinic:user');
+        
+        if (userJson) {
+          const user = JSON.parse(userJson);
+          setUserData(user); // Guardar los datos originales para actualizar después
+          
+          // Establecer nombre completo
+          const fullName = user.firstName && user.lastName 
+            ? `${user.firstName} ${user.lastName}` 
+            : user.name || '';
+          
+          setName(fullName);
+          setEmail(user.email || '');
+          setPhoneNumber(user.phone || '');
+          setAddress(user.address || '');
+          
+          // También intentar cargar otros datos que podrían estar guardados en campos separados
+          const savedBirthDate = await AsyncStorage.getItem('@MediClinic:profileBirthDate');
+          const savedEmergencyName = await AsyncStorage.getItem('@MediClinic:emergencyContactName');
+          const savedEmergencyRelation = await AsyncStorage.getItem('@MediClinic:emergencyContactRelation');
+          const savedEmergencyPhone = await AsyncStorage.getItem('@MediClinic:emergencyContactPhone');
+          
+          if (savedBirthDate) setBirthDate(savedBirthDate);
+          if (savedEmergencyName) setEmergencyContactName(savedEmergencyName);
+          if (savedEmergencyRelation) setEmergencyContactRelation(savedEmergencyRelation);
+          if (savedEmergencyPhone) setEmergencyContactPhone(savedEmergencyPhone);
+          
+          return; // Si encontramos datos de usuario, salimos temprano
+        }
+        
+        // Método de carga anterior (compatibilidad)
         const savedName = await AsyncStorage.getItem('@MediClinic:profileName');
         const savedEmail = await AsyncStorage.getItem('@MediClinic:profileEmail');
         const savedPhone = await AsyncStorage.getItem('@MediClinic:profilePhone');
@@ -70,9 +105,22 @@ export default function EditProfileScreen() {
 
   const handleSaveChanges = async () => {
     try {
-      // Guardar solo los datos que se pueden editar en AsyncStorage
+      // Guardar los campos editables en AsyncStorage
       await AsyncStorage.setItem('@MediClinic:profilePhone', phoneNumber);
       await AsyncStorage.setItem('@MediClinic:profileAddress', address);
+      
+      // Actualizar el objeto de usuario si existe
+      if (userData) {
+        // Actualizar solo los campos editables
+        const updatedUserData = {
+          ...userData,
+          phone: phoneNumber,
+          address: address
+        };
+        
+        // Guardar el objeto de usuario actualizado
+        await AsyncStorage.setItem('@MediClinic:user', JSON.stringify(updatedUserData));
+      }
       
       Alert.alert(
         'Cambios guardados',

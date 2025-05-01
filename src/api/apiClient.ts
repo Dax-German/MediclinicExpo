@@ -36,12 +36,19 @@ apiClient.interceptors.request.use(
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      
+      // Log de depuración para peticiones
+      console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`, {
+        headers: config.headers,
+        data: config.data
+      });
     } catch (error) {
       console.error('Error al obtener token de autenticación:', error);
     }
     return config;
   },
   (error: AxiosError): Promise<never> => {
+    console.error('Error en interceptor de request:', error);
     return Promise.reject(error);
   }
 );
@@ -96,6 +103,14 @@ apiClient.interceptors.response.use(
       // El servidor respondió con un código de estado que cae fuera del rango de 2xx
       const status = error.response.status;
       const data = error.response.data as any;
+      
+      console.log('apiClient - Error de respuesta:', {
+        status,
+        url: originalRequest.url,
+        method: originalRequest.method,
+        data: data,
+        headers: originalRequest.headers
+      });
       
       // Si el token ha expirado (401), intentar refrescar token
       if (status === 401 && !originalRequest._retry) {

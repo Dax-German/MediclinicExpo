@@ -4,6 +4,7 @@ import { Redirect, Stack, useFocusEffect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Image, ImageSourcePropType, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import authService from '../src/api/services/authService';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -26,6 +27,48 @@ export default function ProfileScreen() {
   // Función para cargar los datos del perfil
   const loadProfileData = useCallback(async () => {
     try {
+      // Intentar cargar datos del usuario autenticado primero
+      const userJson = await AsyncStorage.getItem('@MediClinic:user');
+      
+      console.log('=========== DEBUG PROFILE DATA ===========');
+      console.log('User JSON data from AsyncStorage:', userJson);
+      
+      if (userJson) {
+        const userData = JSON.parse(userJson);
+        console.log('Parsed user data:', JSON.stringify(userData, null, 2));
+        
+        // Establecer el nombre completo usando firstName y lastName
+        if (userData.firstName && userData.lastName) {
+          setProfileName(`${userData.firstName} ${userData.lastName}`);
+          console.log('Setting name from firstName+lastName:', `${userData.firstName} ${userData.lastName}`);
+        } else if (userData.firstName) {
+          setProfileName(userData.firstName);
+          console.log('Setting name from firstName:', userData.firstName);
+        } else if (userData.name) {
+          setProfileName(userData.name);
+          console.log('Setting name from name:', userData.name);
+        }
+
+        // Establecer el email
+        if (userData.email) {
+          setProfileEmail(userData.email);
+          console.log('Setting email:', userData.email);
+        }
+
+        // Establecer la imagen de perfil si existe
+        if (userData.avatarUrl) {
+          setProfileImage(userData.avatarUrl);
+          console.log('Setting image from avatarUrl:', userData.avatarUrl);
+        } else if (userData.localAvatarUri) {
+          setProfileImage(userData.localAvatarUri);
+          console.log('Setting image from localAvatarUri:', userData.localAvatarUri);
+        }
+        
+        console.log('=========== END DEBUG PROFILE DATA ===========');
+        return; // Salir temprano si encontramos datos de usuario
+      }
+      
+      // Si no hay usuario autenticado, caer en datos guardados en claves específicas (compatibilidad retroactiva)
       // Cargar imagen
       const savedImage = await AsyncStorage.getItem('@MediClinic:profileImage');
       if (savedImage) {
@@ -93,9 +136,25 @@ export default function ProfileScreen() {
     setRedirectTo('/SupportScreen');
   };
 
-  const handleLogout = () => {
-    // Cuando se implementa la API real, aquí se debe limpiar la sesión
-    setRedirectTo('/LoginScreen');
+  const handleLogout = async () => {
+    try {
+      console.log('ProfileScreen - Iniciando cierre de sesión');
+      
+      // Limpiar la sesión usando el servicio de autenticación
+      await authService.logout();
+      
+      // Esperar un momento para asegurar que se complete la limpieza
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log('ProfileScreen - Sesión cerrada, redirigiendo a LoginScreen');
+      
+      // Redirigir a la pantalla de login
+      setRedirectTo('/LoginScreen');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      // En caso de error, intentar redirigir de todas formas
+      setRedirectTo('/LoginScreen');
+    }
   };
 
   const handleImagePicker = () => {
@@ -220,6 +279,12 @@ export default function ProfileScreen() {
 
         <View style={styles.versionContainer}>
           <Text style={styles.versionText}>Versión 1.0.0</Text>
+          <TouchableOpacity 
+            onPress={() => setRedirectTo('/DebugScreen')}
+            style={styles.debugButton}
+          >
+            <Text style={styles.debugText}>Depurar</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
@@ -354,6 +419,16 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
   },
   versionText: {
+    fontSize: 12,
+    color: '#888',
+  },
+  debugButton: {
+    marginTop: 10,
+    padding: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+  },
+  debugText: {
     fontSize: 12,
     color: '#888',
   },
