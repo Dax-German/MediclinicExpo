@@ -1,17 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, {
-    AxiosError,
-    AxiosInstance,
-    AxiosResponse,
-    InternalAxiosRequestConfig
+  AxiosError,
+  AxiosInstance,
+  AxiosResponse,
+  InternalAxiosRequestConfig
 } from 'axios';
-
-// URL base de la API
-const BASE_URL: string = 'https://mediclinic-api.com/api/v1';
+import { API_BASE_URL, API_ENDPOINTS, buildUrl } from './endpoints';
 
 // Creación de la instancia personalizada de Axios
 const apiClient: AxiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   timeout: 15000, // 15 segundos
   headers: {
     'Content-Type': 'application/json',
@@ -20,17 +18,21 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 // Tipo para errores de la API
-interface ApiError {
+export interface ApiError {
   status: number;
   message: string;
   data?: any;
 }
 
+// Constantes para claves de almacenamiento
+const AUTH_TOKEN_KEY = '@MediClinic:authToken';
+const REFRESH_TOKEN_KEY = '@MediClinic:refreshToken';
+
 // Interceptor para añadir token de autenticación a las peticiones
 apiClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
     try {
-      const token = await AsyncStorage.getItem('@MediClinic:authToken');
+      const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -44,12 +46,49 @@ apiClient.interceptors.request.use(
   }
 );
 
+// Función para refrescar el token
+const refreshAuthToken = async (): Promise<string | null> => {
+  try {
+    const refreshToken = await AsyncStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refreshToken) {
+      return null;
+    }
+
+    // Hacer la petición para refrescar el token sin usar los interceptores
+    const response = await axios.post(
+      buildUrl(API_ENDPOINTS.AUTH.REFRESH_TOKEN),
+      { refreshToken },
+      {
+        baseURL: API_BASE_URL,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      }
+    );
+
+    const { token, refreshToken: newRefreshToken } = response.data;
+
+    // Guardar los nuevos tokens
+    await AsyncStorage.setItem(AUTH_TOKEN_KEY, token);
+    await AsyncStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
+
+    return token;
+  } catch (error) {
+    console.error('Error al refrescar el token:', error);
+    // Limpiar los tokens almacenados si hay un error
+    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+    await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+    return null;
+  }
+};
+
 // Interceptor para manejar respuestas y errores
 apiClient.interceptors.response.use(
   (response: AxiosResponse): any => {
     return response.data;
   },
-  async (error: AxiosError): Promise<never> => {
+  async (error: AxiosError): Promise<any> => {
     // Verificar si hay respuesta del servidor
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     
@@ -63,45 +102,62 @@ apiClient.interceptors.response.use(
         originalRequest._retry = true;
         
         try {
-          // Implementar lógica para refrescar token si existe
-          const refreshToken = await AsyncStorage.getItem('@MediClinic:refreshToken');
-          if (refreshToken) {
-            // Aquí iría la lógica para obtener un nuevo token
-            // ...
-            
+          const newToken = await refreshAuthToken();
+          
+          if (newToken) {
+            // Actualizar el token en la petición original
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
             // Reintentar la petición original con el nuevo token
-            return apiClient(originalRequest);
+            return axios(originalRequest);
+          } else {
+            // Redirigir a login (implementar manejo según la arquitectura de la app)
+            // Por ejemplo, a través de un evento global o un contexto
+            console.warn('Sesión expirada. Redirigiendo a login...');
+            // Aquí puedes emitir un evento global o usar un contexto para redirigir
           }
         } catch (refreshError) {
           console.error('Error al refrescar token:', refreshError);
-          // Redirigir a login
-          // Esto podría mejorarse usando un evento global o un contexto
         }
       }
       
-      return Promise.reject({
+      const apiError: ApiError = {
         status,
         message: data?.message || 'Error en la petición',
         data: data
-      } as ApiError);
+      };
+      
+      return Promise.reject(apiError);
     }
     
     if (error.request) {
       // La petición fue hecha pero no se recibió respuesta
       console.error('No se recibió respuesta del servidor:', error.request);
-      return Promise.reject({
+      const apiError: ApiError = {
         status: 0,
         message: 'Error de conexión. No se pudo conectar con el servidor.'
-      } as ApiError);
+      };
+      return Promise.reject(apiError);
     }
     
     // Error al configurar la petición
     console.error('Error al configurar la petición:', error.message);
-    return Promise.reject({
+    const apiError: ApiError = {
       status: 0,
       message: 'Error al realizar la petición: ' + error.message
-    } as ApiError);
+    };
+    return Promise.reject(apiError);
   }
 );
+
+// Función para gestionar el cierre de sesión
+export const logout = async (): Promise<void> => {
+  try {
+    await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+    await AsyncStorage.removeItem(REFRESH_TOKEN_KEY);
+    // Aquí puedes añadir cualquier otra lógica necesaria para el cierre de sesión
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+  }
+};
 
 export default apiClient; 

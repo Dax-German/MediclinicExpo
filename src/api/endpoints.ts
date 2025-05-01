@@ -1,10 +1,5 @@
-/**
- * Definición centralizada de todos los endpoints de la API
- * Esto evita el uso de strings mágicos y facilita cambios globales
- */
-
 // URL base del API - ajústala según tu entorno
-export const API_BASE_URL = 'http://localhost:8080';
+export const API_BASE_URL = 'http://10.0.2.2:8080';
 
 export interface AuthEndpoints {
   LOGIN: string;
@@ -238,4 +233,4 @@ export const buildUrl = (endpoint: string): string => {
   return `${API_BASE_URL}${endpoint}`;
 };
 
-export default API_ENDPOINTS;
+export default API_ENDPOINTS; 

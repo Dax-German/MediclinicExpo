@@ -22,6 +22,13 @@ try {
   console.warn('Error al acceder a propiedades de Constants:', error);
 }
 
+// Ignorar los archivos de servicios para que no se consideren rutas
+export const unstable_settings = {
+  // Configuración para ignorar carpetas API y sus archivos como rutas
+  initialRouteName: 'index',
+  ignorePatterns: ['src/api/**/*']
+};
+
 /**
  * Componente principal de la aplicación que configura la navegación y el tema
  * Se encarga de:
