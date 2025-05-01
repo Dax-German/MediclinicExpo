@@ -120,7 +120,7 @@ export default function RootLayout() {
         <Stack.Screen 
           name="ScheduleAppointmentScreen" 
           options={{ 
-            headerShown: false,
+            headerShown: true,
             gestureEnabled: false 
           }} 
         />

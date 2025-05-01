@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -22,12 +23,28 @@ export default function AppointmentsScreen() {
     setError(null);
     
     try {
-      // Llamada al servicio según la pestaña activa
-      const data = activeTab === 'upcoming' 
-        ? await appointmentService.getUpcomingAppointments() 
-        : await appointmentService.getAppointmentHistory();
+      // Obtener el ID del paciente desde el contexto de autenticación
+      const userJson = await AsyncStorage.getItem('@MediClinic:user');
+      const user = userJson ? JSON.parse(userJson) : null;
       
-      setAppointments(data);
+      if (!user || !user.id) {
+        setError('No se pudo obtener información del usuario');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Llamada al servicio según la pestaña activa
+      try {
+        // Las funciones ahora devuelven arrays directamente
+        const appointments = activeTab === 'upcoming' 
+          ? await appointmentService.getUpcomingAppointments() 
+          : await appointmentService.getAppointmentHistory();
+        
+        setAppointments(appointments);
+      } catch (serviceError) {
+        console.error('Error en el servicio:', serviceError);
+        throw serviceError;
+      }
     } catch (err) {
       console.error('Error al cargar citas:', err);
       setError('No se pudieron cargar las citas. Intente nuevamente.');

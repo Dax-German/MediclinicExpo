@@ -20,8 +20,8 @@ export default function ProfileScreen() {
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [profileName, setProfileName] = useState('Juan García');
-  const [profileEmail, setProfileEmail] = useState('juangarcia@gmail.com');
+  const [profileName, setProfileName] = useState<string>('');
+  const [profileEmail, setProfileEmail] = useState<string>('');
 
   // Función para cargar los datos del perfil
   const loadProfileData = useCallback(async () => {
@@ -38,8 +38,17 @@ export default function ProfileScreen() {
       
       if (savedName) setProfileName(savedName);
       if (savedEmail) setProfileEmail(savedEmail);
+
+      // Si no hay datos guardados, mostrar valores por defecto para la demo
+      if (!savedName && !savedEmail) {
+        setProfileName('Usuario');
+        setProfileEmail('usuario@ejemplo.com');
+      }
     } catch (error) {
       console.error('Error al cargar datos del perfil:', error);
+      // Valores por defecto en caso de error
+      setProfileName('Usuario');
+      setProfileEmail('usuario@ejemplo.com');
     }
   }, []);
 
@@ -85,6 +94,7 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
+    // Cuando se implementa la API real, aquí se debe limpiar la sesión
     setRedirectTo('/LoginScreen');
   };
 

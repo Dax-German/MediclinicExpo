@@ -3,6 +3,7 @@ import { Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { RegisterData } from './services/index';
 
 export default function RegisterScreen() {
   const [documentType, setDocumentType] = useState('cedula');
@@ -88,19 +89,23 @@ export default function RegisterScreen() {
       setIsLoading(true);
       
       try {
-        // Llamada al servicio de registro (comentado para desarrollo)
-        /* await authService.register({
+        // Preparamos los datos para el registro
+        const userData: RegisterData = {
           documentType,
           documentNumber,
           name,
           email,
           phone,
           password
-        });
+        };
+
+        // TODO: Cuando la API esté lista, descomentar este bloque
+        /*
+        await authService.register(userData);
+        console.log('Usuario registrado exitosamente');
+        */
         
-        console.log('Usuario registrado exitosamente'); */
-        
-        // Simulamos un tiempo de espera
+        // Simulamos un tiempo de espera para desarrollo
         setTimeout(() => {
           setIsLoading(false);
           // Redirigir a login después del registro exitoso
@@ -111,10 +116,8 @@ export default function RegisterScreen() {
         alert(`Error al registrar: ${error instanceof Error ? error.message : 'Error desconocido'}`);
       }
     } else {
-      // Mostrar errores pero permitir la navegación si todos los campos están llenos
-      if (documentNumber && name && email && phone && password && confirmPassword) {
-        setRedirectToLogin(true);
-      }
+      // Datos inválidos, no permitir continuar
+      console.log('Error en la validación del formulario');
     }
   };
 

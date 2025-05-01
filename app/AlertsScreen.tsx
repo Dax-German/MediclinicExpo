@@ -1,43 +1,68 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
-type Alert = {
+// Adaptador para el tipo Alert de la pantalla
+type AlertItem = {
   id: string;
   title: string;
   message: string;
   date: string;
-  type: 'appointment';
+  type: 'appointment' | 'result' | 'reminder' | 'system';
   read: boolean;
 };
 
 export default function AlertsScreen() {
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
-  const [alerts, setAlerts] = useState<Alert[]>([
-    {
-      id: '1',
-      title: 'Recordatorio de cita',
-      message: 'Tienes una cita con el Dr. Carlos Rodríguez mañana a las 9:30 AM.',
-      date: '01/04/2024',
-      type: 'appointment',
-      read: false,
-    },
-  ]);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // Cargar alertas al iniciar la pantalla
+  useEffect(() => {
+    const loadAlerts = async () => {
+      try {
+        setIsLoading(true);
+        // TODO: Cuando la API esté lista, descomentar esta línea
+        // const data = await alertService.getAllAlerts();
+        
+        // Por ahora usamos un array vacío para no mostrar datos hardcodeados
+        setAlerts([]);
+      } catch (error) {
+        console.error('Error al cargar alertas:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAlerts();
+  }, []);
 
   // Si hay una redirección pendiente, realizarla
   if (redirectTo) {
     return <Redirect href={redirectTo as any} />;
   }
 
-  const getIconByType = (type: Alert['type']): IconName => {
-    return 'calendar-outline';
+  const getIconByType = (type: AlertItem['type']): IconName => {
+    switch (type) {
+      case 'appointment':
+        return 'calendar-outline';
+      case 'result':
+        return 'document-text-outline';
+      case 'reminder':
+        return 'time-outline';
+      case 'system':
+        return 'information-circle-outline';
+      default:
+        return 'notifications-outline';
+    }
   };
 
   const markAsRead = (id: string) => {
+    // TODO: Cuando la API esté lista, agregar llamada a alertService.markAlertAsRead(id)
     setAlerts(
       alerts.map((alert) =>
         alert.id === id ? { ...alert, read: true } : alert
@@ -49,7 +74,7 @@ export default function AlertsScreen() {
     setRedirectTo('/HomeScreen');
   };
 
-  const renderAlert = ({ item }: { item: Alert }) => (
+  const renderAlert = ({ item }: { item: AlertItem }) => (
     <TouchableOpacity
       style={[styles.alertItem, item.read ? styles.readAlert : styles.unreadAlert]}
       onPress={() => markAsRead(item.id)}
@@ -91,9 +116,11 @@ export default function AlertsScreen() {
             <Text style={styles.alertsCount}>
               {alerts.filter(a => !a.read).length} no leídas
             </Text>
-            <TouchableOpacity onPress={() => setAlerts(alerts.map(a => ({ ...a, read: true })))}>
-              <Text style={styles.markAllRead}>Marcar todas como leídas</Text>
-            </TouchableOpacity>
+            {alerts.length > 0 && (
+              <TouchableOpacity onPress={() => setAlerts(alerts.map(a => ({ ...a, read: true })))}>
+                <Text style={styles.markAllRead}>Marcar todas como leídas</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <FlatList
