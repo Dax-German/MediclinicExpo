@@ -2,20 +2,24 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { RegisterData } from './services/index';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import SafeModal, { modalStyles } from './components/SafeModal';
+import { RegisterData, authService } from './services/index';
 
 export default function RegisterScreen() {
-  const [documentType, setDocumentType] = useState('cedula');
+  const [documentType, setDocumentType] = useState('CITIZENSHIP_CARD');
   const [documentNumber, setDocumentNumber] = useState('');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState('MALE');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showDocumentTypePicker, setShowDocumentTypePicker] = useState(false);
+  const [showGenderPicker, setShowGenderPicker] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [redirectToLogin, setRedirectToLogin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,10 +32,20 @@ export default function RegisterScreen() {
   // Función para renderizar el texto del tipo de documento seleccionado
   const getDocumentTypeText = () => {
     switch(documentType) {
-      case 'cedula': return 'Cédula de Ciudadanía';
-      case 'pasaporte': return 'Pasaporte';
-      case 'ti': return 'Tarjeta de Identidad';
+      case 'CITIZENSHIP_CARD': return 'Cédula de Ciudadanía';
+      case 'PASSPORT': return 'Pasaporte';
+      case 'IDENTITY_CARD': return 'Tarjeta de Identidad';
       default: return 'Seleccionar tipo de documento';
+    }
+  };
+
+  // Función para renderizar el texto del género seleccionado
+  const getGenderText = () => {
+    switch(gender) {
+      case 'MALE': return 'Masculino';
+      case 'FEMALE': return 'Femenino';
+      case 'OTHER': return 'Otro';
+      default: return 'Seleccionar género';
     }
   };
 
@@ -47,9 +61,13 @@ export default function RegisterScreen() {
       newErrors.documentNumber = 'El número de documento es requerido';
     }
 
-    // Validación del nombre
-    if (!name.trim()) {
-      newErrors.name = 'El nombre es requerido';
+    // Validación del nombre y apellido
+    if (!firstName.trim()) {
+      newErrors.firstName = 'El nombre es requerido';
+    }
+
+    if (!lastName.trim()) {
+      newErrors.lastName = 'El apellido es requerido';
     }
 
     // Validación del email
@@ -65,12 +83,17 @@ export default function RegisterScreen() {
     } else if (!/^\d{10}$/.test(phone.replace(/\D/g, ''))) {
       newErrors.phone = 'El teléfono debe tener 10 dígitos';
     }
+    
+    // Validación del género
+    if (!gender) {
+      newErrors.gender = 'El género es requerido';
+    }
 
     // Validación de la contraseña
     if (!password) {
       newErrors.password = 'La contraseña es requerida';
-    } else if (password.length < 10) {
-      newErrors.password = 'La contraseña debe tener al menos 10 caracteres';
+    } else if (password.length < 8) {
+      newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+])/.test(password)) {
       newErrors.password = 'La contraseña debe incluir al menos una mayúscula, una minúscula, un número y un carácter especial';
     }
@@ -89,28 +112,29 @@ export default function RegisterScreen() {
       setIsLoading(true);
       
       try {
-        // Preparamos los datos para el registro
+        // Preparamos los datos para el registro usando el formato esperado por el backend
         const userData: RegisterData = {
+          firstName,
+          lastName,
           documentType,
           documentNumber,
-          name,
           email,
           phone,
-          password
+          password,
+          passwordConfirmation: confirmPassword,
+          gender,
+          role: "USER", // Por defecto, asignamos el rol de usuario
+          defaultSchedule: true,
+          physicalLocationId: 0
         };
 
-        // TODO: Cuando la API esté lista, descomentar este bloque
-        /*
-        await authService.register(userData);
-        console.log('Usuario registrado exitosamente');
-        */
+        // Llamada real al servicio de registro
+        const response = await authService.register(userData);
+        console.log('Usuario registrado exitosamente', response);
         
-        // Simulamos un tiempo de espera para desarrollo
-        setTimeout(() => {
-          setIsLoading(false);
-          // Redirigir a login después del registro exitoso
-          setRedirectToLogin(true);
-        }, 1000);
+        setIsLoading(false);
+        // Redirigir a login después del registro exitoso
+        setRedirectToLogin(true);
       } catch (error) {
         setIsLoading(false);
         alert(`Error al registrar: ${error instanceof Error ? error.message : 'Error desconocido'}`);
@@ -125,10 +149,17 @@ export default function RegisterScreen() {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0}
     >
       <StatusBar style="dark" />
       
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        nestedScrollEnabled={true}
+        removeClippedSubviews={false}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+      >
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => setRedirectToLogin(true)}
@@ -159,63 +190,50 @@ export default function RegisterScreen() {
             </TouchableOpacity>
             
             {/* Modal para el selector de tipo de documento */}
-            <Modal
+            <SafeModal
               visible={showDocumentTypePicker}
-              transparent={true}
-              animationType="fade"
-              onRequestClose={() => setShowDocumentTypePicker(false)}
+              onClose={() => setShowDocumentTypePicker(false)}
+              title="Tipo de documento"
             >
               <TouchableOpacity 
-                style={styles.modalOverlay} 
-                activeOpacity={1} 
-                onPress={() => setShowDocumentTypePicker(false)}
+                style={modalStyles.modalOption}
+                onPress={() => {
+                  setDocumentType('CITIZENSHIP_CARD');
+                  setShowDocumentTypePicker(false);
+                }}
               >
-                <View style={styles.modalContainer}>
-                  <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>Tipo de documento</Text>
-                    
-                    <TouchableOpacity 
-                      style={styles.modalOption}
-                      onPress={() => {
-                        setDocumentType('cedula');
-                        setShowDocumentTypePicker(false);
-                      }}
-                    >
-                      <Text style={[
-                        styles.modalOptionText, 
-                        documentType === 'cedula' && styles.selectedOption
-                      ]}>Cédula de Ciudadanía</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                      style={styles.modalOption}
-                      onPress={() => {
-                        setDocumentType('pasaporte');
-                        setShowDocumentTypePicker(false);
-                      }}
-                    >
-                      <Text style={[
-                        styles.modalOptionText, 
-                        documentType === 'pasaporte' && styles.selectedOption
-                      ]}>Pasaporte</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                      style={styles.modalOption}
-                      onPress={() => {
-                        setDocumentType('ti');
-                        setShowDocumentTypePicker(false);
-                      }}
-                    >
-                      <Text style={[
-                        styles.modalOptionText, 
-                        documentType === 'ti' && styles.selectedOption
-                      ]}>Tarjeta de Identidad</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                <Text style={[
+                  modalStyles.modalOptionText, 
+                  documentType === 'CITIZENSHIP_CARD' && modalStyles.selectedOption
+                ]}>Cédula de Ciudadanía</Text>
               </TouchableOpacity>
-            </Modal>
+              
+              <TouchableOpacity 
+                style={modalStyles.modalOption}
+                onPress={() => {
+                  setDocumentType('PASSPORT');
+                  setShowDocumentTypePicker(false);
+                }}
+              >
+                <Text style={[
+                  modalStyles.modalOptionText, 
+                  documentType === 'PASSPORT' && modalStyles.selectedOption
+                ]}>Pasaporte</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={modalStyles.modalOption}
+                onPress={() => {
+                  setDocumentType('IDENTITY_CARD');
+                  setShowDocumentTypePicker(false);
+                }}
+              >
+                <Text style={[
+                  modalStyles.modalOptionText, 
+                  documentType === 'IDENTITY_CARD' && modalStyles.selectedOption
+                ]}>Tarjeta de Identidad</Text>
+              </TouchableOpacity>
+            </SafeModal>
             
             {errors.documentType ? <Text style={styles.errorText}>{errors.documentType}</Text> : null}
           </View>
@@ -233,14 +251,25 @@ export default function RegisterScreen() {
           </View>
           
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Nombre completo</Text>
+            <Text style={styles.label}>Nombre</Text>
             <TextInput
               style={styles.input}
               placeholder="Ingresa tu nombre"
-              value={name}
-              onChangeText={setName}
+              value={firstName}
+              onChangeText={setFirstName}
             />
-            {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
+            {errors.firstName ? <Text style={styles.errorText}>{errors.firstName}</Text> : null}
+          </View>
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Apellido</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ingresa tu apellido"
+              value={lastName}
+              onChangeText={setLastName}
+            />
+            {errors.lastName ? <Text style={styles.errorText}>{errors.lastName}</Text> : null}
           </View>
           
           <View style={styles.inputContainer}>
@@ -266,6 +295,64 @@ export default function RegisterScreen() {
               keyboardType="phone-pad"
             />
             {errors.phone ? <Text style={styles.errorText}>{errors.phone}</Text> : null}
+          </View>
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Género</Text>
+            <TouchableOpacity
+              style={styles.selectInput}
+              onPress={() => setShowGenderPicker(true)}
+            >
+              <Text style={styles.selectText}>{getGenderText()}</Text>
+            </TouchableOpacity>
+            
+            {/* Modal para el selector de género */}
+            <SafeModal
+              visible={showGenderPicker}
+              onClose={() => setShowGenderPicker(false)}
+              title="Género"
+            >
+              <TouchableOpacity 
+                style={modalStyles.modalOption}
+                onPress={() => {
+                  setGender('MALE');
+                  setShowGenderPicker(false);
+                }}
+              >
+                <Text style={[
+                  modalStyles.modalOptionText, 
+                  gender === 'MALE' && modalStyles.selectedOption
+                ]}>Masculino</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={modalStyles.modalOption}
+                onPress={() => {
+                  setGender('FEMALE');
+                  setShowGenderPicker(false);
+                }}
+              >
+                <Text style={[
+                  modalStyles.modalOptionText, 
+                  gender === 'FEMALE' && modalStyles.selectedOption
+                ]}>Femenino</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={modalStyles.modalOption}
+                onPress={() => {
+                  setGender('OTHER');
+                  setShowGenderPicker(false);
+                }}
+              >
+                <Text style={[
+                  modalStyles.modalOptionText, 
+                  gender === 'OTHER' && modalStyles.selectedOption
+                ]}>Otro</Text>
+              </TouchableOpacity>
+            </SafeModal>
+            
+            {errors.gender ? <Text style={styles.errorText}>{errors.gender}</Text> : null}
           </View>
           
           <View style={styles.inputContainer}>
@@ -405,48 +492,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     paddingVertical: 2,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#0077B6',
-    textAlign: 'center',
-  },
-  modalOption: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  modalOptionText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  selectedOption: {
-    color: '#0077B6',
-    fontWeight: 'bold',
   },
   passwordContainer: {
     flexDirection: 'row',

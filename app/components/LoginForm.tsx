@@ -2,18 +2,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import apiServices from '../../src/api/services';
 import { DOCUMENT_TYPES, getDocumentTypeText } from '../../src/constants/documentTypes';
+import SafeModal, { modalStyles } from './SafeModal';
 
 // Definir los tipos localmente ya que no se pueden importar de services
 interface LoginCredentials {
@@ -187,77 +187,64 @@ const LoginForm = ({ onSuccess, onForgotPassword, onRegister }: LoginFormProps) 
         <Text style={styles.selectText}>{getDocumentTypeText(documentType)}</Text>
       </TouchableOpacity>
       
-      {/* Modal para seleccionar tipo de documento */}
-      <Modal
+      {/* Modal para seleccionar tipo de documento - Usar SafeModal con título */}
+      <SafeModal
         visible={showDocumentTypePicker}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowDocumentTypePicker(false)}
+        onClose={() => setShowDocumentTypePicker(false)}
+        title="Tipo de documento"
       >
         <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={() => setShowDocumentTypePicker(false)}
+          style={modalStyles.modalOption}
+          onPress={() => {
+            setDocumentType(DOCUMENT_TYPES.CITIZENSHIP_CARD);
+            setShowDocumentTypePicker(false);
+          }}
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Tipo de documento</Text>
-              
-              <TouchableOpacity 
-                style={styles.modalOption}
-                onPress={() => {
-                  setDocumentType(DOCUMENT_TYPES.CITIZENSHIP_CARD);
-                  setShowDocumentTypePicker(false);
-                }}
-              >
-                <Text style={[
-                  styles.modalOptionText, 
-                  documentType === DOCUMENT_TYPES.CITIZENSHIP_CARD && styles.selectedOption
-                ]}>Cédula de Ciudadanía</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.modalOption}
-                onPress={() => {
-                  setDocumentType(DOCUMENT_TYPES.FOREIGNERS_ID_CARD);
-                  setShowDocumentTypePicker(false);
-                }}
-              >
-                <Text style={[
-                  styles.modalOptionText, 
-                  documentType === DOCUMENT_TYPES.FOREIGNERS_ID_CARD && styles.selectedOption
-                ]}>Cédula de Extranjería</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.modalOption}
-                onPress={() => {
-                  setDocumentType(DOCUMENT_TYPES.PASSPORT);
-                  setShowDocumentTypePicker(false);
-                }}
-              >
-                <Text style={[
-                  styles.modalOptionText, 
-                  documentType === DOCUMENT_TYPES.PASSPORT && styles.selectedOption
-                ]}>Pasaporte</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.modalOption}
-                onPress={() => {
-                  setDocumentType(DOCUMENT_TYPES.IDENTITY_CARD);
-                  setShowDocumentTypePicker(false);
-                }}
-              >
-                <Text style={[
-                  styles.modalOptionText, 
-                  documentType === DOCUMENT_TYPES.IDENTITY_CARD && styles.selectedOption
-                ]}>Tarjeta de Identidad</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <Text style={[
+            modalStyles.modalOptionText, 
+            documentType === DOCUMENT_TYPES.CITIZENSHIP_CARD && modalStyles.selectedOption
+          ]}>Cédula de Ciudadanía</Text>
         </TouchableOpacity>
-      </Modal>
+        
+        <TouchableOpacity 
+          style={modalStyles.modalOption}
+          onPress={() => {
+            setDocumentType(DOCUMENT_TYPES.FOREIGNERS_ID_CARD);
+            setShowDocumentTypePicker(false);
+          }}
+        >
+          <Text style={[
+            modalStyles.modalOptionText, 
+            documentType === DOCUMENT_TYPES.FOREIGNERS_ID_CARD && modalStyles.selectedOption
+          ]}>Cédula de Extranjería</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={modalStyles.modalOption}
+          onPress={() => {
+            setDocumentType(DOCUMENT_TYPES.PASSPORT);
+            setShowDocumentTypePicker(false);
+          }}
+        >
+          <Text style={[
+            modalStyles.modalOptionText, 
+            documentType === DOCUMENT_TYPES.PASSPORT && modalStyles.selectedOption
+          ]}>Pasaporte</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={modalStyles.modalOption}
+          onPress={() => {
+            setDocumentType(DOCUMENT_TYPES.IDENTITY_CARD);
+            setShowDocumentTypePicker(false);
+          }}
+        >
+          <Text style={[
+            modalStyles.modalOptionText, 
+            documentType === DOCUMENT_TYPES.IDENTITY_CARD && modalStyles.selectedOption
+          ]}>Tarjeta de Identidad</Text>
+        </TouchableOpacity>
+      </SafeModal>
       
       {/* Campo para número de documento */}
       <Text style={styles.label}>Número de documento</Text>
@@ -374,41 +361,6 @@ const styles = StyleSheet.create({
   selectText: {
     fontSize: 16,
     color: '#333',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContainer: {
-    width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  modalContent: {
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-    textAlign: 'center',
-  },
-  modalOption: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
-  },
-  modalOptionText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  selectedOption: {
-    color: '#2D6CDF',
-    fontWeight: 'bold',
   },
   passwordContainer: {
     flexDirection: 'row',

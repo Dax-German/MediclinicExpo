@@ -3,20 +3,20 @@ import apiServices from '../../src/api/services';
 
 // Importaciones de tipos desde los servicios
 import {
-  Appointment,
-  Doctor,
-  Specialty
+    Appointment,
+    Doctor,
+    Specialty
 } from '../../src/api/services/appointmentService';
 
 import {
-  RegisterUserData as ApiRegisterData,
-  AuthResponse,
-  LoginCredentials,
-  User
+    RegisterUserData as ApiRegisterData,
+    AuthResponse,
+    LoginCredentials,
+    User
 } from '../../src/api/services/authService';
 
 import {
-  Notification
+    Notification
 } from '../../src/api/services/notificationService';
 
 // Definición de tipos locales necesarios
@@ -30,12 +30,19 @@ export interface Alert {
 }
 
 export interface RegisterData {
+  firstName: string;
+  lastName: string;
   documentType: string;
   documentNumber: string;
-  name: string;
   email: string;
   phone: string;
   password: string;
+  passwordConfirmation: string;
+  gender: string;
+  role?: string;
+  defaultSchedule?: boolean;
+  specialtyId?: number;
+  physicalLocationId?: number;
 }
 
 // Re-exportamos los tipos para mantener compatibilidad
@@ -183,16 +190,21 @@ export const authService = {
   // Registrar nuevo usuario
   register: async (userData: RegisterData): Promise<AuthResponse> => {
     try {
-      // Adaptar formato si es necesario
+      // Ya no necesitamos adaptar el formato, pues el RegisterData ya coincide con ApiRegisterData
       const registerData: ApiRegisterData = {
-        firstName: userData.name.split(' ')[0],
-        lastName: userData.name.split(' ').slice(1).join(' '),
+        firstName: userData.firstName,
+        lastName: userData.lastName,
         documentType: userData.documentType,
         documentNumber: userData.documentNumber,
         email: userData.email,
         phone: userData.phone,
         password: userData.password,
-        passwordConfirmation: userData.password
+        passwordConfirmation: userData.passwordConfirmation,
+        gender: userData.gender,
+        role: userData.role,
+        defaultSchedule: userData.defaultSchedule,
+        specialtyId: userData.specialtyId,
+        physicalLocationId: userData.physicalLocationId
       };
       
       return await apiServices.auth.register(registerData);

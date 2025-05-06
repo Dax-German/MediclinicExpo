@@ -136,6 +136,17 @@ export default function HomeScreen() {
       >
         <Ionicons name="chatbubble-ellipses" size={30} color="white" />
       </TouchableOpacity>
+      
+      {/* Overlay para ocultar mensajes de error */}
+      <View style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 40,
+        backgroundColor: '#f5f5f5',
+        zIndex: 1000,
+      }} />
     </View>
   );
 }
