@@ -51,10 +51,10 @@ export interface SpecialtiesEndpoints {
 
 export interface AppointmentTypesEndpoints {
   GET_ALL: string;
-  GET_BY_SPECIALTY: (specialtyId: number) => string;
+  GET_BY_SPECIALTY: (specialtyId: string) => string;
   CREATE: string;
-  UPDATE: (id: number) => string;
-  DELETE: (id: number) => string;
+  UPDATE: (id: string) => string;
+  DELETE: (id: string) => string;
 }
 
 export interface AvailabilityEndpoints {
@@ -171,10 +171,10 @@ export const API_ENDPOINTS: ApiEndpoints = {
   // Tipos de citas
   APPOINTMENT_TYPES: {
     GET_ALL: '/appointment-types',
-    GET_BY_SPECIALTY: (specialtyId: number) => `/appointment-types/specialty/${specialtyId}`,
+    GET_BY_SPECIALTY: (specialtyId: string) => `/appointment-types/specialty/${specialtyId}`,
     CREATE: '/appointment-types',
-    UPDATE: (id: number) => `/appointment-types/${id}`,
-    DELETE: (id: number) => `/appointment-types/${id}`,
+    UPDATE: (id: string) => `/appointment-types/${id}`,
+    DELETE: (id: string) => `/appointment-types/${id}`,
   },
   
   // Disponibilidad

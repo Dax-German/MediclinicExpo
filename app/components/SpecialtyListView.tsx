@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import specialtyService from '../../src/api/services/specialtyService';
 import SpecialtyListItem from './SpecialtyListItem';
 
 // Definimos el tipo
@@ -59,28 +60,106 @@ const SpecialtyListView: React.FC<SpecialtyListViewProps> = ({
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [useLocalData, setUseLocalData] = useState<boolean>(true); // Usar datos locales por defecto
+  const [useLocalData, setUseLocalData] = useState<boolean>(false); // Cambio a false para intentar API primero
 
   // Cargar especialidades al montar el componente
   useEffect(() => {
     loadSpecialties();
   }, []);
 
+  // Efecto adicional para filtrar cuando cambia la búsqueda
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      filterSpecialties(searchQuery);
+    } else if (!isLoading) {
+      // Si no hay búsqueda, restaurar la lista completa
+      loadSpecialties();
+    }
+  }, [searchQuery]);
+
   const loadSpecialties = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Usamos directamente los datos locales para evitar errores de API
-      setSpecialties(MOCK_SPECIALTIES);
-      setUseLocalData(true);
-      setIsLoading(false);
-    } catch (err) {
+      // Intentar obtener datos de la API
+      const response = await specialtyService.getAllSpecialties({ limit: 100 });
+      
+      if (response && response.items && response.items.length > 0) {
+        // Si la API devuelve datos, los usamos
+        setSpecialties(response.items);
+        setUseLocalData(false);
+      } else {
+        // Si no hay datos en la API, usar fallback local
+        console.log('No se encontraron especialidades en la API, usando datos locales');
+        setSpecialties(MOCK_SPECIALTIES);
+        setUseLocalData(true);
+      }
+    } catch (err: any) {
       console.error('Error al cargar especialidades:', err);
-      // En caso de error, usar datos locales
-      setUseLocalData(true);
+      // Mensajes de error específicos según el código
+      if (err.status === 404) {
+        setError('No se encontraron especialidades médicas.');
+      } else if (err.status === 401) {
+        setError('No tiene permisos para ver especialidades.');
+      } else if (err.status >= 500) {
+        setError('Error en el servidor. Intente más tarde.');
+      } else {
+        setError('No se pudieron cargar las especialidades.');
+      }
+      // Usar datos locales como fallback en caso de error
       setSpecialties(MOCK_SPECIALTIES);
-      setError(null); // No mostramos el error al usuario ya que usamos datos locales
+      setUseLocalData(true);
+      // Limpiar error si usamos datos locales como fallback
+      if (MOCK_SPECIALTIES.length > 0) {
+        setError(null);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filterSpecialties = async (query: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    const searchTerm = query.toLowerCase().trim();
+    
+    try {
+      if (!useLocalData) {
+        // Intentar buscar usando la API
+        const response = await specialtyService.searchSpecialties(searchTerm, { limit: 100 });
+        
+        if (response && response.items && response.items.length > 0) {
+          setSpecialties(response.items);
+        } else {
+          // Si la API no encuentra resultados
+          setSpecialties([]);
+        }
+      } else {
+        // Filtrar localmente si estamos usando datos locales
+        const filteredSpecialties = MOCK_SPECIALTIES.filter(
+          specialty => specialty.name.toLowerCase().includes(searchTerm) || 
+                      (specialty.description && specialty.description.toLowerCase().includes(searchTerm))
+        );
+        setSpecialties(filteredSpecialties);
+      }
+    } catch (err) {
+      console.error('Error al filtrar especialidades:', err);
+      
+      // Si hay error con la API, intentar filtrar localmente
+      const filteredSpecialties = MOCK_SPECIALTIES.filter(
+        specialty => specialty.name.toLowerCase().includes(searchTerm) || 
+                    (specialty.description && specialty.description.toLowerCase().includes(searchTerm))
+      );
+      
+      setSpecialties(filteredSpecialties);
+      setUseLocalData(true);
+      // No mostrar error si encontramos resultados localmente
+      if (filteredSpecialties.length === 0) {
+        setError('No se pudieron buscar especialidades.');
+      }
+    } finally {
       setIsLoading(false);
     }
   };
@@ -122,7 +201,9 @@ const SpecialtyListView: React.FC<SpecialtyListViewProps> = ({
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            No hay especialidades disponibles.
+            {searchQuery 
+              ? `No se encontraron especialidades para "${searchQuery}"`
+              : "No hay especialidades disponibles."}
           </Text>
         </View>
       )}

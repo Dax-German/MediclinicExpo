@@ -104,6 +104,20 @@ export const appointmentService = {
     }
   },
 
+  // Reprogramar una cita existente
+  rescheduleAppointment: async (id: string, newDate: string, reason: string = 'Reprogramación solicitada por el paciente'): Promise<boolean> => {
+    try {
+      await apiServices.appointments.rescheduleAppointment(id, {
+        date: newDate,
+        reason: reason
+      });
+      return true;
+    } catch (error) {
+      console.error(`Error al reprogramar cita con ID ${id}:`, error);
+      return false;
+    }
+  },
+
   // Programar una nueva cita
   scheduleAppointment: async (appointmentData: any): Promise<Appointment> => {
     try {

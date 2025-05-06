@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import apiServices from '../../src/api/services';
 
 // Definimos los tipos localmente
@@ -73,6 +73,7 @@ const AppointmentForm = ({
   // Estados auxiliares
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [appointmentTypesError, setAppointmentTypesError] = useState<string | null>(null);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -163,21 +164,183 @@ const AppointmentForm = ({
     }
   };
 
+  // Crear un tipo de cita específico para mostrar los tipos predefinidos
+  const getPresetAppointmentTypes = (specialtyName: string = '', specialtyId?: string): any[] => {
+    // Por defecto, usar texto vacío si no hay nombre de especialidad
+    const lowerName = (specialtyName || '').toLowerCase();
+    // Obtener el ID como string para comparar
+    const id = specialtyId || '';
+    
+    console.log(`Generando tipos predefinidos para especialidad: "${specialtyName}" (ID: ${id})`);
+    
+    // Usar tanto el ID como el nombre para determinar la especialidad
+    // Odontología
+    if (id === '4' || lowerName.includes('odonto') || lowerName.includes('dental')) {
+      console.log(`Usando tipos de cita para ODONTOLOGÍA`);
+      return [
+        { 
+          id: 'dental-general', 
+          name: 'Consulta odontológica general', 
+          description: 'Evaluación dental general y plan de tratamiento', 
+          durationMinutes: 40,
+          isGeneral: true 
+        },
+        { 
+          id: 'cordales', 
+          name: 'Cirugía de cordales', 
+          description: 'Extracción de muelas del juicio o cordales', 
+          durationMinutes: 60 
+        }
+      ];
+    } 
+    // Oftalmología
+    else if (id === '5' || lowerName.includes('oft') || lowerName.includes('optom') || lowerName.includes('ocul')) {
+      console.log(`Usando tipos de cita para OFTALMOLOGÍA`);
+      return [
+        { 
+          id: 'eye-general', 
+          name: 'Consulta oftalmológica general', 
+          description: 'Evaluación visual completa', 
+          durationMinutes: 60,
+          isGeneral: true
+        },
+        { 
+          id: 'oftalmoscopia', 
+          name: 'Oftalmoscopia', 
+          description: 'Examen detallado del fondo de ojo', 
+          durationMinutes: 30 
+        }
+      ];
+    } 
+    // Medicina general
+    else if (id === '1' || lowerName.includes('general') || lowerName.includes('medicina')) {
+      console.log(`Usando tipos de cita para MEDICINA GENERAL`);
+      return [
+        { 
+          id: 'general-consult', 
+          name: 'Consulta general', 
+          description: 'Consulta médica de rutina', 
+          durationMinutes: 30,
+          isGeneral: true
+        },
+        { 
+          id: 'blood-test', 
+          name: 'Examen de sangre', 
+          description: 'Toma de muestras para análisis', 
+          durationMinutes: 15 
+        }
+      ];
+    } 
+    // Pediatría
+    else if (id === '2' || lowerName.includes('pediatr') || lowerName.includes('niñ') || lowerName.includes('infant')) {
+      console.log(`Usando tipos de cita para PEDIATRÍA`);
+      return [
+        { 
+          id: 'pediatric-general', 
+          name: 'Consulta pediátrica', 
+          description: 'Evaluación general de salud pediátrica', 
+          durationMinutes: 30,
+          isGeneral: true
+        },
+        { 
+          id: 'pediatric-vaccine', 
+          name: 'Vacunación', 
+          description: 'Administración de vacunas programadas', 
+          durationMinutes: 15
+        }
+      ];
+    } 
+    // Planificación familiar
+    else if (id === '3' || lowerName.includes('planifica') || lowerName.includes('familiar')) {
+      console.log(`Usando tipos de cita para PLANIFICACIÓN`);
+      return [
+        {
+          id: 'planning-consult',
+          name: 'Consulta de planificación',
+          description: 'Asesoramiento sobre planificación familiar',
+          durationMinutes: 45,
+          isGeneral: true
+        }
+      ];
+    } 
+    // Para cualquier otra especialidad
+    else {
+      console.log(`Usando tipos de cita GENÉRICOS`);
+      return [
+        { 
+          id: 'general-consult', 
+          name: 'Consulta médica', 
+          description: 'Consulta médica general', 
+          durationMinutes: 30,
+          isGeneral: true
+        },
+        { 
+          id: 'followup', 
+          name: 'Consulta de seguimiento', 
+          description: 'Revisión médica de seguimiento', 
+          durationMinutes: 20 
+        }
+      ];
+    }
+  };
+
   const loadAppointmentTypes = async () => {
     if (!selectedSpecialtyId) return;
     
     setIsLoading(true);
     setError(null);
+    setAppointmentTypesError(null);
+    
+    // Obtener la especialidad seleccionada para mostrar tipos predefinidos si es necesario
+    const selectedSpecialty = specialties.find(s => s.id === selectedSpecialtyId);
+    console.log(`Especialidad seleccionada:`, selectedSpecialty);
     
     try {
-      // Obtener tipos de cita para la especialidad seleccionada
+      // Intentar obtener tipos de cita desde la API 
+      console.log(`Cargando tipos de cita para especialidad ${selectedSpecialtyId}`);
+      
       const response = await apiServices.appointmentTypes.getAppointmentTypesBySpecialty(
-        parseInt(selectedSpecialtyId, 10)
+        selectedSpecialtyId
       );
-      setAppointmentTypes(response.items || []);
-    } catch (err) {
-      console.error('Error al cargar tipos de cita:', err);
-      setError('No se pudieron cargar los tipos de cita.');
+      
+      console.log('Respuesta API tipos de cita:', response);
+      
+      if (response && response.items && response.items.length > 0) {
+        setAppointmentTypes(response.items);
+        console.log(`Se encontraron ${response.items.length} tipos de cita en la API`);
+      } else {
+        console.log('No se encontraron tipos de cita en la API, cargando predefinidos');
+        // Si no hay tipos de cita, cargar los predefinidos
+        const backupTypes = getPresetAppointmentTypes(selectedSpecialty?.name, selectedSpecialtyId);
+        setAppointmentTypes(backupTypes);
+        
+        if (backupTypes.length === 0) {
+          setAppointmentTypesError('No hay tipos de cita disponibles para esta especialidad');
+        } else {
+          console.log(`Cargados ${backupTypes.length} tipos predefinidos`);
+          // No mostramos error si tenemos tipos predefinidos
+          setAppointmentTypesError(null);
+        }
+      }
+    } catch (err: any) {
+      console.error(`Error al cargar tipos de cita para especialidad ${selectedSpecialtyId}:`, err);
+      
+      // Cargar tipos predefinidos como respaldo basados en la especialidad
+      console.log('Cargando tipos predefinidos debido al error');
+      const predefinedTypes = getPresetAppointmentTypes(selectedSpecialty?.name, selectedSpecialtyId);
+      setAppointmentTypes(predefinedTypes);
+      
+      if (predefinedTypes.length > 0) {
+        // No mostramos error si tenemos tipos predefinidos
+        setAppointmentTypesError(null);
+        console.log(`Cargados ${predefinedTypes.length} tipos predefinidos por error`);
+      } else {
+        if (err.status === 404) {
+          setAppointmentTypesError('No hay tipos de cita disponibles para esta especialidad');
+        } else {
+          setAppointmentTypesError('No se pudieron cargar los tipos de cita');
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -213,21 +376,34 @@ const AppointmentForm = ({
   };
 
   const loadAvailableTimes = async () => {
-    if (!selectedDoctorId || !selectedDate) return;
+    if (!selectedDoctorId || !selectedDate) {
+      console.log('Falta información necesaria para cargar horarios');
+      console.log(`Doctor: ${selectedDoctorId}, Fecha: ${selectedDate}`);
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
     
     try {
-      // Obtener horarios disponibles para el doctor y la fecha seleccionados
+      // Obtener horarios disponibles para el doctor en la fecha seleccionada
+      console.log(`Cargando horarios para doctor ${selectedDoctorId}, fecha ${selectedDate}`);
+      
+      // Usar el servicio de doctores para obtener disponibilidad
       const slots = await apiServices.doctors.getAvailability(
         selectedDoctorId,
         selectedDate
       );
+      
       setAvailableTimes(slots || []);
+      console.log(`Horarios cargados: ${slots ? slots.length : 0}`);
     } catch (err) {
       console.error('Error al cargar horarios disponibles:', err);
       setError('No se pudieron cargar los horarios disponibles.');
+      
+      // Usar horas de ejemplo como fallback en caso de error (solo para desarrollo)
+      const mockTimes = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
+      setAvailableTimes(mockTimes);
     } finally {
       setIsLoading(false);
     }
@@ -244,6 +420,8 @@ const AppointmentForm = ({
 
   const handleAppointmentTypeSelect = (id: string) => {
     setSelectedAppointmentTypeId(id);
+    // Cargar los doctores inmediatamente después de seleccionar el tipo de cita
+    loadDoctorsBySpecialty();
     setCurrentStep('doctor');
     if (onStepChange) onStepChange('doctor');
   };
@@ -271,13 +449,40 @@ const AppointmentForm = ({
       return;
     }
     
+    // Formatear la fecha y hora para la API
+    const appointmentDateTime = `${selectedDate}T${selectedTime}:00`;
+    
+    // Si es una reprogramación, solicitar confirmación
+    if (appointmentId && existingAppointment) {
+      Alert.alert(
+        "Confirmar reprogramación",
+        "¿Está seguro que desea reprogramar esta cita?",
+        [
+          {
+            text: "Cancelar",
+            style: "cancel"
+          },
+          {
+            text: "Confirmar",
+            style: "default",
+            onPress: async () => {
+              await processAppointment(appointmentDateTime);
+            }
+          }
+        ]
+      );
+    } else {
+      // Si es una nueva cita, procesar directamente
+      await processAppointment(appointmentDateTime);
+    }
+  };
+
+  // Procesar la creación o reprogramación de la cita
+  const processAppointment = async (appointmentDateTime: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Formatear la fecha y hora para la API
-      const appointmentDateTime = `${selectedDate}T${selectedTime}:00`;
-      
       let result;
       
       if (appointmentId && existingAppointment) {
@@ -309,9 +514,9 @@ const AppointmentForm = ({
         router.replace('/AppointmentsScreen');
       }
     } catch (err) {
-      console.error('Error al programar cita:', err);
-      setError('No se pudo programar la cita. Intente nuevamente.');
-      Alert.alert('Error', 'No se pudo programar la cita. Intente nuevamente.');
+      console.error('Error al procesar cita:', err);
+      setError('No se pudo procesar la cita. Intente nuevamente.');
+      Alert.alert('Error', 'No se pudo procesar la cita. Intente nuevamente.');
     } finally {
       setIsLoading(false);
     }
@@ -385,72 +590,126 @@ const AppointmentForm = ({
     </View>
   );
 
-  const renderAppointmentTypeStep = () => (
-    <View style={styles.stepContainer}>
-      <Text style={styles.stepSubtitle}>Selecciona tipo de cita</Text>
-      
-      {isLoading ? (
-        <ActivityIndicator size="large" color="#2D6CDF" />
-      ) : error ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>No se pudieron cargar los datos. Intente nuevamente.</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={loadAppointmentTypes}>
-            <Text style={styles.retryButtonText}>Reintentar</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.appointmentTypeContent}>
-          {/* Dropdown para seleccionar tipo de cita */}
-          <TouchableOpacity style={styles.dropdownSelector}>
-            <Text style={styles.dropdownText}>Seleccionar tipo de cita</Text>
-            <Ionicons name="chevron-down-outline" size={20} color="#666" />
-          </TouchableOpacity>
-
-          {/* Mensaje de error si es necesario */}
-          {appointmentTypes.length === 0 && (
-            <View style={styles.inlineErrorContainer}>
-              <Text style={styles.inlineErrorText}>
-                No se pudieron cargar los datos. Intente nuevamente.
-              </Text>
-              <TouchableOpacity 
-                style={styles.retryButtonSmall}
-                onPress={loadAppointmentTypes}
-              >
-                <Text style={styles.retryButtonTextSmall}>Reintentar</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          
-          {/* Opciones de tipos de cita (ocultas en la interfaz final) */}
-          <ScrollView style={{display: 'none'}}>
-            {appointmentTypes.map((type) => (
+  const renderAppointmentTypeStep = () => {
+    // Asegurarse de que tengamos tipos de cita para mostrar, ya sea de la API o predefinidos
+    const hasAppointmentTypes = appointmentTypes && appointmentTypes.length > 0;
+    
+    // Obtener especialidad seleccionada para mostrar en mensaje de error
+    const selectedSpecialty = specialties.find(s => s.id === selectedSpecialtyId);
+    const specialtyName = selectedSpecialty?.name || 'la especialidad seleccionada';
+    
+    return (
+      <View style={styles.stepContainer}>
+        <Text style={styles.stepTitle}>Seleccione el tipo de cita</Text>
+        
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#2D6CDF" />
+          </View>
+        ) : appointmentTypesError && !hasAppointmentTypes ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorMessage}>
+              No se encontraron tipos de cita para {specialtyName}
+            </Text>
+            <TouchableOpacity 
+              style={styles.errorButton}
+              onPress={() => {
+                setCurrentStep('specialty');
+                if (onStepChange) onStepChange('specialty');
+              }}
+            >
+              <Text style={styles.errorButtonText}>Seleccionar otra especialidad</Text>
+            </TouchableOpacity>
+          </View>
+        ) : !hasAppointmentTypes ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorMessage}>No hay tipos de cita disponibles</Text>
+            <TouchableOpacity 
+              style={styles.errorButton}
+              onPress={() => {
+                setCurrentStep('specialty');
+                if (onStepChange) onStepChange('specialty');
+              }}
+            >
+              <Text style={styles.errorButtonText}>Volver a especialidades</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          // Usamos FlatList en lugar de ScrollView para evitar el error de anidamiento
+          <FlatList
+            data={appointmentTypes}
+            renderItem={({item: type}) => (
               <TouchableOpacity
                 key={type.id}
                 style={[
-                  styles.optionCard,
-                  selectedAppointmentTypeId === type.id && styles.selectedOptionCard
+                  styles.cardContainer,
+                  selectedAppointmentTypeId === type.id && styles.cardContainerSelected
                 ]}
                 onPress={() => handleAppointmentTypeSelect(type.id)}
               >
-                <Text style={styles.optionTitle}>{type.name}</Text>
-                {type.description && (
-                  <Text style={styles.optionDescription}>{type.description}</Text>
-                )}
+                <View style={styles.cardContent}>
+                  <View style={styles.cardTitleRow}>
+                    <Text style={styles.cardTitle}>{type.name}</Text>
+                    <Text style={styles.durationText}>
+                      {type.durationMinutes} min
+                    </Text>
+                  </View>
+                  
+                  {type.description && (
+                    <Text style={styles.cardDescription}>{type.description}</Text>
+                  )}
+                  
+                  <View style={styles.cardTags}>
+                    {type.isGeneral && (
+                      <View style={styles.tag}>
+                        <Text style={styles.tagText}>General</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+                
+                <Ionicons
+                  name={selectedAppointmentTypeId === type.id ? "checkmark-circle" : "chevron-forward-outline"}
+                  size={24}
+                  color={selectedAppointmentTypeId === type.id ? "#4CAF50" : "#cccccc"}
+                />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-          
-          {/* Botón para continuar (para simulación) */}
+            )}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{paddingBottom: 20}}
+          />
+        )}
+        
+        <View style={styles.navigationContainer}>
           <TouchableOpacity 
-            style={styles.continueButton}
-            onPress={() => handleAppointmentTypeSelect('1')} // Simulamos selección
+            style={styles.backButton}
+            onPress={() => {
+              setCurrentStep('specialty');
+              if (onStepChange) onStepChange('specialty');
+            }}
           >
-            <Text style={styles.continueButtonText}>Continuar</Text>
+            <Ionicons name="arrow-back-outline" size={20} color="#2D6CDF" />
+            <Text style={styles.backButtonText}>Volver</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.nextButton,
+              (!selectedAppointmentTypeId) && styles.nextButtonDisabled
+            ]}
+            disabled={!selectedAppointmentTypeId}
+            onPress={() => {
+              setCurrentStep('doctor');
+              if (onStepChange) onStepChange('doctor');
+            }}
+          >
+            <Text style={styles.nextButtonText}>Siguiente</Text>
+            <Ionicons name="arrow-forward-outline" size={20} color="white" />
           </TouchableOpacity>
         </View>
-      )}
-    </View>
-  );
+      </View>
+    );
+  };
 
   const renderDoctorStep = () => (
     <View style={styles.stepContainer}>
@@ -480,7 +739,7 @@ const AppointmentForm = ({
                 Dr. {doctor.firstName} {doctor.lastName}
               </Text>
               {doctor.rating !== undefined && (
-                <View style={styles.ratingContainer}>
+                <View style={styles.doctorRating}>
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Ionicons
                       key={star}
@@ -513,7 +772,7 @@ const AppointmentForm = ({
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.dateTimeContainer}>
+        <View style={styles.dateSection}>
           {/* Selector de fecha */}
           <Text style={styles.sectionTitle}>Fecha</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dateScroll}>
@@ -640,39 +899,19 @@ const AppointmentForm = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#E0E0E0',
-    width: '100%',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#2D6CDF',
-    width: '25%',
-  },
-  backButton: {
-    padding: 15,
   },
   stepContainer: {
     flex: 1,
     padding: 20,
   },
   stepTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
-  },
-  stepSubtitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 20,
     color: '#333',
+    marginBottom: 20,
   },
-  optionsContainer: {
-    flex: 1,
+  cardList: {
+    paddingBottom: 20,
   },
   optionCard: {
     backgroundColor: 'white',
@@ -681,10 +920,24 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   selectedOptionCard: {
     borderColor: '#2D6CDF',
     backgroundColor: '#EDF1FA',
+  },
+  optionIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  optionContent: {
+    flex: 1,
   },
   optionTitle: {
     fontSize: 16,
@@ -694,24 +947,20 @@ const styles = StyleSheet.create({
   optionDescription: {
     fontSize: 14,
     color: '#666',
-    marginTop: 5,
+    marginTop: 3,
   },
-  optionDetail: {
-    fontSize: 14,
-    color: '#2D6CDF',
-    marginTop: 5,
-  },
-  ratingContainer: {
+  doctorRating: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 5,
   },
   ratingText: {
+    fontSize: 14,
+    color: '#FFA000',
     marginLeft: 5,
-    color: '#666',
   },
-  dateTimeContainer: {
-    flex: 1,
+  dateSection: {
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 16,
@@ -793,6 +1042,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
   errorContainer: {
     backgroundColor: '#FFE5E5',
     padding: 15,
@@ -804,6 +1059,13 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
     marginBottom: 10,
   },
+  errorMessage: {
+    color: '#FF3B30',
+    marginBottom: 10,
+  },
+  errorHint: {
+    color: '#666',
+  },
   retryButton: {
     backgroundColor: '#FF3B30',
     padding: 10,
@@ -813,59 +1075,113 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-  appointmentTypeContent: {
-    flex: 1,
-    width: '100%',
-    paddingHorizontal: 20,
+  cardContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    marginBottom: 10,
+    backgroundColor: 'white',
   },
-  dropdownSelector: {
+  cardContainerSelected: {
+    borderColor: '#2D6CDF',
+    backgroundColor: '#EDF1FA',
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 15,
-    backgroundColor: 'white',
-    marginBottom: 15,
   },
-  dropdownText: {
+  cardTitle: {
     fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  durationText: {
+    fontSize: 14,
     color: '#666',
   },
-  inlineErrorContainer: {
-    backgroundColor: '#FFEBEE',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  inlineErrorText: {
-    color: '#D32F2F',
-    marginBottom: 10,
-  },
-  retryButtonSmall: {
-    alignSelf: 'center',
-    backgroundColor: '#F44336',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 6,
-  },
-  retryButtonTextSmall: {
-    color: 'white',
-    fontWeight: 'bold',
+  cardDescription: {
     fontSize: 14,
+    color: '#666',
+    marginTop: 5,
   },
-  continueButton: {
+  cardTags: {
+    flexDirection: 'row',
+    marginTop: 5,
+  },
+  tag: {
     backgroundColor: '#2D6CDF',
-    borderRadius: 8,
-    paddingVertical: 15,
+    borderRadius: 5,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    marginRight: 5,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  navigationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 20,
+    paddingVertical: 10,
   },
-  continueButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButtonText: {
     fontSize: 16,
+    color: '#2D6CDF',
+    marginLeft: 5,
+  },
+  nextButton: {
+    backgroundColor: '#2D6CDF',
+    borderRadius: 8,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  nextButtonDisabled: {
+    backgroundColor: '#E0E0E0',
+  },
+  nextButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+    marginRight: 5,
+  },
+  errorButton: {
+    backgroundColor: '#FF3B30',
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+  },
+  errorButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: '#E0E0E0',
+    width: '100%',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#2D6CDF',
+    width: '25%',
+  },
+  optionsContainer: {
+    flex: 1,
   },
 });
 

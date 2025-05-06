@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Appointment, appointmentService } from './services';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -72,14 +72,39 @@ export default function AppointmentsScreen() {
    * Maneja la cancelación de una cita
    */
   const handleCancel = async (appointmentId: string) => {
-    try {
-      await appointmentService.cancelAppointment(appointmentId);
-      // Recargar las citas para reflejar el cambio
-      loadAppointments();
-    } catch (err) {
-      console.error('Error al cancelar cita:', err);
-      // Aquí podríamos mostrar un mensaje de error al usuario
-    }
+    // Mostrar un diálogo de confirmación antes de cancelar
+    Alert.alert(
+      "Cancelar cita",
+      "¿Está seguro que desea cancelar esta cita?",
+      [
+        {
+          text: "No",
+          style: "cancel"
+        },
+        {
+          text: "Sí, cancelar",
+          style: "destructive",
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              // La cancelación no devuelve un valor específico, por lo que manejamos
+              // cualquier excepción como error y consideramos éxito si no hay excepción
+              await appointmentService.cancelAppointment(appointmentId);
+              
+              // Si llegamos aquí, la cancelación fue exitosa
+              Alert.alert("Éxito", "La cita ha sido cancelada correctamente");
+              // Recargar las citas para reflejar el cambio
+              loadAppointments();
+            } catch (err) {
+              console.error('Error al cancelar cita:', err);
+              Alert.alert("Error", "Ocurrió un error al cancelar la cita. Intente nuevamente.");
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   /**

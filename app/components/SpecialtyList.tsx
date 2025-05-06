@@ -2,14 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import specialtyService from '../../src/api/services/specialtyService';
 
 // Definimos el tipo localmente
 interface Specialty {
@@ -75,7 +76,7 @@ const SpecialtyList = ({
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [useLocalData, setUseLocalData] = useState<boolean>(true); // Usar datos locales por defecto
+  const [useLocalData, setUseLocalData] = useState<boolean>(false); // Cambio a false para intentar usar API primero
 
   // Cargar especialidades al montar el componente
   useEffect(() => {
@@ -87,15 +88,36 @@ const SpecialtyList = ({
     setError(null);
     
     try {
-      // Usar los datos locales para evitar errores de API
-      setUseLocalData(true);
-      setSpecialties(MOCK_SPECIALTIES);
-    } catch (err) {
+      // Intentar cargar especialidades desde la API
+      const response = showFeaturedOnly 
+        ? await specialtyService.getFeaturedSpecialties({ limit: maxItems || 10 })
+        : await specialtyService.getAllSpecialties({ limit: 100 });
+      
+      if (response && response.items && response.items.length > 0) {
+        // Si hay datos, los usamos
+        setSpecialties(response.items);
+        setUseLocalData(false);
+      } else {
+        // Si no hay datos, usar datos locales como fallback
+        console.log('No se encontraron especialidades en la API, usando datos locales');
+        setSpecialties(MOCK_SPECIALTIES);
+        setUseLocalData(true);
+      }
+    } catch (err: any) {
       console.error('Error al cargar especialidades:', err);
-      // En caso de error, usar datos locales
+      // Mensaje de error específico según el tipo de error
+      if (err.status === 404) {
+        setError('No se encontraron especialidades médicas.');
+      } else if (err.status === 401) {
+        setError('No tiene permisos para ver especialidades.');
+      } else if (err.status >= 500) {
+        setError('Error en el servidor. Intente más tarde.');
+      } else {
+        setError('No se pudieron cargar las especialidades.');
+      }
+      // En caso de error, usar datos locales como fallback
       setUseLocalData(true);
       setSpecialties(MOCK_SPECIALTIES);
-      setError(null); // No mostramos el error al usuario ya que usamos datos locales
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +163,24 @@ const SpecialtyList = ({
     } else {
       // Si usamos datos del backend, aplicamos los filtros normales
       const displaySpecialties = specialties;
-      return maxItems ? displaySpecialties.slice(0, maxItems) : displaySpecialties;
+      
+      // Añadir el botón "Más" solo si estamos mostrando las destacadas y hay más de las que mostramos
+      if (showFeaturedOnly && maxItems && displaySpecialties.length > maxItems) {
+        const limitedList = displaySpecialties.slice(0, maxItems);
+        // Solo añadir "Más" si no existe ya
+        if (!limitedList.find(s => s.name === 'Más')) {
+          // Asegurar que el botón "Más" tenga el tipo correcto de Specialty
+          const moreButton: Specialty = { 
+            id: 'more', 
+            name: 'Más', 
+            icon: 'add-outline' // Usando un ícono válido de Ionicons
+          };
+          return [...limitedList, moreButton];
+        }
+        return limitedList;
+      }
+      
+      return displaySpecialties;
     }
   };
 
