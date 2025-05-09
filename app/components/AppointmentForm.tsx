@@ -447,15 +447,31 @@ const AppointmentForm = ({
       // Obtener doctores por especialidad usando el endpoint correcto
       console.log(`Buscando doctores para especialidad con ID: ${selectedSpecialtyId}`);
       
-      // Usar el endpoint correcto para obtener doctores filtrados por especialidad y rol
-      const doctorsUrl = `/users?role=DOCTOR&specialtyId=${selectedSpecialtyId}`;
-      console.log(`Consultando endpoint: ${doctorsUrl}`);
+      // Usar el endpoint específico para obtener doctores por especialidad
+      const doctorsUrl = `/users/specialty/${selectedSpecialtyId}`;
+      console.log(`Consultando endpoint para doctores: ${doctorsUrl}`);
       
       const apiResponse = await apiClient.get(doctorsUrl);
       // Usar aserción de tipo para evitar errores de TypeScript
       const response = apiResponse as any;
       
-      if (response && response.items && response.items.length > 0) {
+      console.log(`Respuesta de doctores recibida:`, response);
+      
+      if (response && Array.isArray(response)) {
+        console.log(`Se encontraron ${response.length} doctores para la especialidad ${selectedSpecialtyId}`);
+        
+        // Mapear los doctores al formato esperado por el componente
+        const mappedDoctors = response.map((doc: any) => ({
+          id: doc.id,
+          firstName: doc.firstName || '',
+          lastName: doc.lastName || '',
+          specialty: typeof doc.specialty === 'string' ? doc.specialty : doc.specialty?.name || '',
+          rating: doc.rating || 0
+        }));
+        
+        setDoctors(mappedDoctors);
+      } else if (response && response.items && response.items.length > 0) {
+        // Formato alternativo con 'items'
         console.log(`Se encontraron ${response.items.length} doctores para la especialidad ${selectedSpecialtyId}`);
         
         // Mapear los doctores al formato esperado por el componente
@@ -470,8 +486,37 @@ const AppointmentForm = ({
         setDoctors(mappedDoctors);
       } else {
         console.log('No se encontraron doctores para esta especialidad');
-        setDoctors([]);
-        setError('No hay médicos disponibles para esta especialidad.');
+        
+        // Si no se encontraron doctores, intentar con el endpoint alternativo
+        console.log('Intentando endpoint alternativo para doctores...');
+        const altDoctorsUrl = `/users?role=DOCTOR&specialtyId=${selectedSpecialtyId}`;
+        console.log(`Consultando endpoint alternativo: ${altDoctorsUrl}`);
+        
+        try {
+          const altResponse = await apiClient.get(altDoctorsUrl) as any;
+          
+          if (altResponse && altResponse.items && altResponse.items.length > 0) {
+            console.log(`Se encontraron ${altResponse.items.length} doctores con el endpoint alternativo`);
+            
+            // Mapear los doctores al formato esperado
+            const mappedDoctors = altResponse.items.map((doc: any) => ({
+              id: doc.id,
+              firstName: doc.firstName || '',
+              lastName: doc.lastName || '',
+              specialty: typeof doc.specialty === 'string' ? doc.specialty : doc.specialty?.name || '',
+              rating: doc.rating || 0
+            }));
+            
+            setDoctors(mappedDoctors);
+          } else {
+            setDoctors([]);
+            setError('No hay médicos disponibles para esta especialidad.');
+          }
+        } catch (altErr) {
+          console.error('Error con endpoint alternativo:', altErr);
+          setDoctors([]);
+          setError('No hay médicos disponibles para esta especialidad.');
+        }
       }
     } catch (err: any) {
       console.error('Error al cargar doctores:', err);
@@ -575,9 +620,13 @@ const AppointmentForm = ({
   };
 
   const handleAppointmentTypeSelect = (id: string) => {
+    console.log(`Tipo de cita seleccionado: ${id} para especialidad: ${selectedSpecialtyId}`);
     setSelectedAppointmentTypeId(id);
+    
     // Cargar los doctores inmediatamente después de seleccionar el tipo de cita
     loadDoctorsBySpecialty();
+    
+    // Navegar al paso de selección de doctor
     setCurrentStep('doctor');
     if (onStepChange) onStepChange('doctor');
   };
