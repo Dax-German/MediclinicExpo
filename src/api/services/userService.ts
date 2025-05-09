@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../apiClient';
 import { API_ENDPOINTS } from '../endpoints';
-import { formatRequestData } from '../utils/apiUtils';
+import { formatRequestData, PaginatedResponse, ProcessedPaginatedResponse, processPaginatedResponse } from '../utils/apiUtils';
+import { Specialty } from './appointmentService';
 import { User } from './authService';
 
 /**
@@ -33,10 +34,70 @@ export interface AvatarResponse {
   message?: string;
 }
 
+export interface UserFilter {
+  role?: 'patient' | 'doctor' | 'admin';
+  specialtyId?: string;
+  name?: string;
+  isActive?: boolean;
+}
+
+export interface DoctorProfile extends User {
+  specialty?: Specialty;
+  specialtyId?: string;
+  rating?: number;
+  appointmentsCompleted?: number;
+  reviews?: any[];
+}
+
 /**
  * Servicio para gestionar el perfil y datos del usuario
  */
 class UserService {
+  /**
+   * Obtiene todos los usuarios
+   * @param {Record<string, any>} params - Parámetros para filtrar
+   * @returns {Promise<ProcessedPaginatedResponse<User>>} - Lista de usuarios
+   */
+  async getAllUsers(params: Record<string, any> = {}): Promise<ProcessedPaginatedResponse<User>> {
+    try {
+      const response = await apiClient.get<any, PaginatedResponse<User>>(
+        API_ENDPOINTS.USERS.GET_ALL,
+        { params }
+      );
+      return processPaginatedResponse<User>(response);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene un usuario por su ID
+   * @param {number} userId - ID del usuario
+   * @returns {Promise<User>} - Datos del usuario
+   */
+  async getUserById(userId: number): Promise<User> {
+    try {
+      return await apiClient.get<any, User>(API_ENDPOINTS.USERS.GET_BY_ID(userId));
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene doctores por especialidad
+   * @param {number} specialtyId - ID de la especialidad
+   * @returns {Promise<User[]>} - Lista de doctores
+   */
+  async getDoctorsBySpecialty(specialtyId: number): Promise<User[]> {
+    try {
+      return await apiClient.get<any, User[]>(
+        API_ENDPOINTS.USERS.GET_BY_SPECIALTY(specialtyId)
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+  
   /**
    * Obtiene el perfil completo del usuario
    * @returns {Promise<User>} - Datos del perfil
@@ -98,18 +159,24 @@ class UserService {
   
   /**
    * Sube una imagen de perfil
-   * @param {ImageData} imageData - Datos de la imagen
+   * @param {ImageData | FormData} imageData - Datos de la imagen o FormData
    * @returns {Promise<AvatarResponse>} - Respuesta con URL de la imagen
    */
-  async uploadAvatar(imageData: ImageData): Promise<AvatarResponse> {
+  async uploadAvatar(imageData: ImageData | FormData): Promise<AvatarResponse> {
     try {
-      // Crear FormData para envío de archivo
-      const formData = new FormData();
-      formData.append('avatar', {
-        uri: imageData.uri,
-        type: imageData.type || 'image/jpeg',
-        name: imageData.name || 'profile.jpg',
-      } as any);
+      let formData: FormData;
+      
+      if (!(imageData instanceof FormData)) {
+        // Crear FormData para envío de archivo
+        formData = new FormData();
+        formData.append('avatar', {
+          uri: imageData.uri,
+          type: imageData.type || 'image/jpeg',
+          name: imageData.name || 'profile.jpg',
+        } as any);
+      } else {
+        formData = imageData;
+      }
       
       // Configuración especial para la solicitud con FormData
       const response = await apiClient.post<FormData, AvatarResponse>(

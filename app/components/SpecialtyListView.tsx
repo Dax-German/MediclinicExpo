@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import specialtyService from '../../src/api/services/specialtyService';
 import SpecialtyListItem from './SpecialtyListItem';
@@ -19,30 +19,66 @@ interface Specialty {
   localImage?: any;
 }
 
-// Datos de ejemplo con descripciones
+// Datos de ejemplo con IDs correctos
 const MOCK_SPECIALTIES: Specialty[] = [
   { 
-    id: '1', 
+    id: '51', 
+    name: 'Pediatría', 
+    icon: 'person-outline',
+    description: 'Especialidad médica que se ocupa de la salud y las enfermedades de los niños.'
+  },
+  { 
+    id: '53', 
+    name: 'Odontología', 
+    icon: 'medical-outline',
+    description: 'Especialidad que se ocupa del diagnóstico, tratamiento y prevención de enfermedades bucodentales.'
+  },
+  { 
+    id: '54', 
+    name: 'Medicina General', 
+    icon: 'pulse-outline',
+    description: 'Atención médica integral para personas de todas las edades.'
+  },
+  { 
+    id: '55', 
+    name: 'Optometría', 
+    icon: 'eye-outline',
+    description: 'Especialidad que se encarga del cuidado primario de la salud visual.'
+  },
+  { 
+    id: '56', 
+    name: 'Planificación', 
+    icon: 'calendar-outline',
+    description: 'Servicios de planificación familiar y salud reproductiva.'
+  },
+  { 
+    id: '57', 
     name: 'Cardiología', 
     icon: 'heart-outline',
     description: 'Especialidad médica que se ocupa del diagnóstico y tratamiento de las enfermedades del corazón.'
   },
   { 
-    id: '2', 
+    id: '58', 
     name: 'Dermatología', 
     icon: 'body-outline',
     description: 'Especialidad médica encargada del estudio de la piel, su estructura, función y enfermedades.'
   },
   { 
-    id: '3', 
+    id: '59', 
     name: 'Traumatología', 
     icon: 'fitness-outline',
     description: 'Especialidad médica que trata lesiones del sistema músculo-esquelético.'
   },
   { 
-    id: '4', 
+    id: '60', 
+    name: 'Ginecología', 
+    icon: 'female-outline',
+    description: 'Especialidad médica que trata las enfermedades del sistema reproductor femenino.'
+  },
+  { 
+    id: '61', 
     name: 'Neurología', 
-    icon: 'pulse-outline',
+    icon: 'analytics-outline',
     description: 'Especialidad médica que trata los trastornos del sistema nervioso.'
   }
 ];
@@ -82,19 +118,10 @@ const SpecialtyListView: React.FC<SpecialtyListViewProps> = ({
     setError(null);
     
     try {
-      // Intentar obtener datos de la API
-      const response = await specialtyService.getAllSpecialties({ limit: 100 });
-      
-      if (response && response.items && response.items.length > 0) {
-        // Si la API devuelve datos, los usamos
-        setSpecialties(response.items);
-        setUseLocalData(false);
-      } else {
-        // Si no hay datos en la API, usar fallback local
-        console.log('No se encontraron especialidades en la API, usando datos locales');
-        setSpecialties(MOCK_SPECIALTIES);
-        setUseLocalData(true);
-      }
+      // Siempre usamos los datos locales para evitar problemas con la API
+      console.log('Usando datos locales de especialidades');
+      setSpecialties(MOCK_SPECIALTIES);
+      setUseLocalData(true);
     } catch (err: any) {
       console.error('Error al cargar especialidades:', err);
       // Mensajes de error específicos según el código

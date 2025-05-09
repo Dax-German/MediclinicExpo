@@ -12,6 +12,7 @@ export interface AuthEndpoints {
 export interface UsersEndpoints {
   GET_ALL: string;
   GET_BY_ID: (id: number) => string;
+  GET_BY_SPECIALTY: (specialtyId: number) => string;
   UPDATE: (id: number) => string;
   DELETE: (id: number) => string;
   PROFILE: string;
@@ -126,6 +127,7 @@ export const API_ENDPOINTS: ApiEndpoints = {
   USERS: {
     GET_ALL: '/users',
     GET_BY_ID: (id: number) => `/users/${id}`,
+    GET_BY_SPECIALTY: (specialtyId: number) => `/users/specialty/${specialtyId}`,
     UPDATE: (id: number) => `/users/${id}`,
     DELETE: (id: number) => `/users/${id}`,
     PROFILE: '/users/profile',
@@ -153,7 +155,7 @@ export const API_ENDPOINTS: ApiEndpoints = {
     GET_UPCOMING: '/appointments/upcoming',
     GET_HISTORY: '/appointments/history',
     DETAILS: (id: string) => `/appointments/${id}`,
-    CANCEL: (id: string) => `/appointments/${id}/cancel`,
+    CANCEL: (id: string) => `/appointments/${id}`,
     RESCHEDULE: (id: string) => `/appointments/${id}/reschedule`,
   },
   
@@ -165,7 +167,7 @@ export const API_ENDPOINTS: ApiEndpoints = {
     UPDATE: (id: number) => `/specialties/${id}`,
     DELETE: (id: number) => `/specialties/${id}`,
     DETAILS: (id: string) => `/specialties/${id}`,
-    DOCTORS: (specialtyId: string) => `/specialties/${specialtyId}/doctors`,
+    DOCTORS: (specialtyId: string) => `/users/specialty/${specialtyId}`,
   },
   
   // Tipos de citas
@@ -224,7 +226,7 @@ export const API_ENDPOINTS: ApiEndpoints = {
 
   // Doctores
   DOCTORS: {
-    AVAILABILITY: (doctorId: string) => `/doctors/${doctorId}/availability`,
+    AVAILABILITY: (doctorId: string) => `/availabilities/slots?doctorId=${doctorId}`,
   },
 };
 

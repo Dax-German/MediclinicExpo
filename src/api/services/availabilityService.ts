@@ -16,14 +16,30 @@ export interface Availability {
 }
 
 export interface AvailabilitySlot {
-  time: string; // HH:MM format
-  available: boolean;
-  [key: string]: any;
+  date: string;
+  time: string;
+  isAvailable: boolean;
 }
 
-export interface AvailabilityQueryParams {
-  doctorId: number;
-  appointmentTypeId: number;
+export interface DoctorAvailability {
+  id: string;
+  doctorId: string;
+  day: string; // Monday, Tuesday, etc.
+  startTime: string;
+  endTime: string;
+}
+
+export interface AvailabilityCreateData {
+  doctorId: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+  recurrence?: 'weekly' | 'biweekly' | 'monthly';
+}
+
+export interface GetSlotsParams {
+  doctorId: string | number;
+  appointmentTypeId: string | number;
   startDate?: string;
   endDate?: string;
 }
@@ -35,15 +51,15 @@ class AvailabilityService {
   /**
    * Obtiene toda la disponibilidad
    * @param {Record<string, any>} params - Parámetros de consulta
-   * @returns {Promise<ProcessedPaginatedResponse<Availability>>} - Lista de disponibilidad
+   * @returns {Promise<ProcessedPaginatedResponse<DoctorAvailability>>} - Lista de disponibilidad
    */
-  async getAllAvailability(params: Record<string, any> = {}): Promise<ProcessedPaginatedResponse<Availability>> {
+  async getAvailabilities(params: Record<string, any> = {}): Promise<ProcessedPaginatedResponse<DoctorAvailability>> {
     try {
-      const response = await apiClient.get<any, PaginatedResponse<Availability>>(
+      const response = await apiClient.get<any, PaginatedResponse<DoctorAvailability>>(
         API_ENDPOINTS.AVAILABILITY.GET_ALL,
         { params }
       );
-      return processPaginatedResponse<Availability>(response);
+      return processPaginatedResponse<DoctorAvailability>(response);
     } catch (error) {
       throw error;
     }
@@ -52,19 +68,13 @@ class AvailabilityService {
   /**
    * Obtiene la disponibilidad por médico
    * @param {number} doctorId - ID del médico
-   * @param {Record<string, any>} params - Parámetros adicionales
-   * @returns {Promise<ProcessedPaginatedResponse<Availability>>} - Lista de disponibilidad del médico
+   * @returns {Promise<DoctorAvailability[]>} - Lista de disponibilidad del médico
    */
-  async getAvailabilityByDoctor(
-    doctorId: number,
-    params: Record<string, any> = {}
-  ): Promise<ProcessedPaginatedResponse<Availability>> {
+  async getDoctorAvailability(doctorId: number): Promise<DoctorAvailability[]> {
     try {
-      const response = await apiClient.get<any, PaginatedResponse<Availability>>(
-        API_ENDPOINTS.AVAILABILITY.GET_BY_DOCTOR(doctorId),
-        { params }
+      return await apiClient.get<any, DoctorAvailability[]>(
+        API_ENDPOINTS.AVAILABILITY.GET_BY_DOCTOR(doctorId)
       );
-      return processPaginatedResponse<Availability>(response);
     } catch (error) {
       throw error;
     }
@@ -72,13 +82,22 @@ class AvailabilityService {
   
   /**
    * Obtiene slots de tiempo disponibles
-   * @param {AvailabilityQueryParams} params - Parámetros de búsqueda
+   * @param {GetSlotsParams} params - Parámetros de búsqueda
    * @returns {Promise<AvailabilitySlot[]>} - Lista de slots disponibles
    */
-  async getAvailableSlots(params: AvailabilityQueryParams): Promise<AvailabilitySlot[]> {
+  async getAvailableSlots(params: GetSlotsParams): Promise<AvailabilitySlot[]> {
     try {
+      // Convertimos los IDs a string por si acaso vienen como number
+      const queryParams = {
+        doctorId: params.doctorId.toString(),
+        appointmentTypeId: params.appointmentTypeId.toString(),
+        startDate: params.startDate,
+        endDate: params.endDate
+      };
+
       return await apiClient.get<any, AvailabilitySlot[]>(
-        API_ENDPOINTS.AVAILABILITY.GET_AVAILABLE_SLOTS(params)
+        '/availabilities/slots',
+        { params: queryParams }
       );
     } catch (error) {
       throw error;
@@ -87,14 +106,14 @@ class AvailabilityService {
   
   /**
    * Crea una nueva disponibilidad
-   * @param {Omit<Availability, 'id'>} availabilityData - Datos de disponibilidad
-   * @returns {Promise<Availability>} - Disponibilidad creada
+   * @param {AvailabilityCreateData} data - Datos de disponibilidad
+   * @returns {Promise<DoctorAvailability>} - Disponibilidad creada
    */
-  async createAvailability(availabilityData: Omit<Availability, 'id'>): Promise<Availability> {
+  async createAvailability(data: AvailabilityCreateData): Promise<DoctorAvailability> {
     try {
-      return await apiClient.post<Omit<Availability, 'id'>, Availability>(
+      return await apiClient.post<AvailabilityCreateData, DoctorAvailability>(
         API_ENDPOINTS.AVAILABILITY.CREATE,
-        availabilityData
+        data
       );
     } catch (error) {
       throw error;
@@ -104,13 +123,11 @@ class AvailabilityService {
   /**
    * Elimina una disponibilidad
    * @param {number} id - ID de la disponibilidad
-   * @returns {Promise<{ message: string }>} - Respuesta de confirmación
+   * @returns {Promise<void>} - Respuesta de confirmación
    */
-  async deleteAvailability(id: number): Promise<{ message: string }> {
+  async deleteAvailability(id: number): Promise<void> {
     try {
-      return await apiClient.delete<any, { message: string }>(
-        API_ENDPOINTS.AVAILABILITY.DELETE(id)
-      );
+      await apiClient.delete(API_ENDPOINTS.AVAILABILITY.DELETE(id));
     } catch (error) {
       throw error;
     }

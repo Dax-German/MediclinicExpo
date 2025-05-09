@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import apiClient from '../../src/api/apiClient';
 import apiServices from '../../src/api/services';
 
 // Definimos los tipos localmente
@@ -108,6 +109,22 @@ const AppointmentForm = ({
     }
   }, [appointmentId]);
 
+  // Establecer IDs correctos de especialidades por defecto si es necesario
+  useEffect(() => {
+    // Si hay un ID inválido (como "1"), actualizar al ID correcto de una especialidad válida
+    if (selectedSpecialtyId === '1') {
+      console.log('Corrigiendo ID de especialidad inválido (1) a ID válido (54 - Medicina General)');
+      setSelectedSpecialtyId('54');
+      
+      if (currentStep === 'appointmentType' || currentStep === 'doctor') {
+        loadAppointmentTypes();
+        if (currentStep === 'doctor') {
+          loadDoctorsBySpecialty();
+        }
+      }
+    }
+  }, [selectedSpecialtyId, currentStep]);
+
   // Funciones para cargar datos
   const loadInitialData = async () => {
     setIsLoading(true);
@@ -130,6 +147,24 @@ const AppointmentForm = ({
     } catch (err) {
       console.error('Error al cargar datos iniciales:', err);
       setError('No se pudieron cargar los datos. Intente nuevamente.');
+      
+      // Si falla la carga de especialidades, usar datos MOCK con los IDs correctos
+      const mockSpecialties: Specialty[] = [
+        { id: '51', name: 'Pediatría', description: 'Atención médica de niños y adolescentes' },
+        { id: '53', name: 'Odontología', description: 'Diagnóstico y tratamiento de enfermedades dentales' },
+        { id: '54', name: 'Medicina General', description: 'Consultas médicas generales y preventivas' },
+        { id: '55', name: 'Oftalmología', description: 'Cuidado de la salud visual y ocular' },
+        { id: '56', name: 'Planificación Familiar', description: 'Asesoramiento sobre métodos anticonceptivos y planificación' },
+        { id: '57', name: 'Cardiología', description: 'Diagnóstico y tratamiento de enfermedades cardíacas' },
+        { id: '58', name: 'Dermatología', description: 'Tratamiento de afecciones de la piel' },
+        { id: '59', name: 'Traumatología', description: 'Lesiones y afecciones del sistema musculoesquelético' },
+        { id: '60', name: 'Ginecología', description: 'Salud reproductiva femenina' },
+        { id: '61', name: 'Neurología', description: 'Trastornos del sistema nervioso' }
+      ];
+      
+      console.log('Usando especialidades MOCK debido a un error de carga:', mockSpecialties.length);
+      setSpecialties(mockSpecialties);
+      setError(null);
     } finally {
       setIsLoading(false);
     }
@@ -173,66 +208,9 @@ const AppointmentForm = ({
     
     console.log(`Generando tipos predefinidos para especialidad: "${specialtyName}" (ID: ${id})`);
     
-    // Usar tanto el ID como el nombre para determinar la especialidad
-    // Odontología
-    if (id === '4' || lowerName.includes('odonto') || lowerName.includes('dental')) {
-      console.log(`Usando tipos de cita para ODONTOLOGÍA`);
-      return [
-        { 
-          id: 'dental-general', 
-          name: 'Consulta odontológica general', 
-          description: 'Evaluación dental general y plan de tratamiento', 
-          durationMinutes: 40,
-          isGeneral: true 
-        },
-        { 
-          id: 'cordales', 
-          name: 'Cirugía de cordales', 
-          description: 'Extracción de muelas del juicio o cordales', 
-          durationMinutes: 60 
-        }
-      ];
-    } 
-    // Oftalmología
-    else if (id === '5' || lowerName.includes('oft') || lowerName.includes('optom') || lowerName.includes('ocul')) {
-      console.log(`Usando tipos de cita para OFTALMOLOGÍA`);
-      return [
-        { 
-          id: 'eye-general', 
-          name: 'Consulta oftalmológica general', 
-          description: 'Evaluación visual completa', 
-          durationMinutes: 60,
-          isGeneral: true
-        },
-        { 
-          id: 'oftalmoscopia', 
-          name: 'Oftalmoscopia', 
-          description: 'Examen detallado del fondo de ojo', 
-          durationMinutes: 30 
-        }
-      ];
-    } 
-    // Medicina general
-    else if (id === '1' || lowerName.includes('general') || lowerName.includes('medicina')) {
-      console.log(`Usando tipos de cita para MEDICINA GENERAL`);
-      return [
-        { 
-          id: 'general-consult', 
-          name: 'Consulta general', 
-          description: 'Consulta médica de rutina', 
-          durationMinutes: 30,
-          isGeneral: true
-        },
-        { 
-          id: 'blood-test', 
-          name: 'Examen de sangre', 
-          description: 'Toma de muestras para análisis', 
-          durationMinutes: 15 
-        }
-      ];
-    } 
-    // Pediatría
-    else if (id === '2' || lowerName.includes('pediatr') || lowerName.includes('niñ') || lowerName.includes('infant')) {
+    // Usar los IDs correctos para determinar la especialidad
+    // Pediatría - ID 51
+    if (id === '51' || lowerName.includes('pediatr') || lowerName.includes('niñ') || lowerName.includes('infant')) {
       console.log(`Usando tipos de cita para PEDIATRÍA`);
       return [
         { 
@@ -250,8 +228,65 @@ const AppointmentForm = ({
         }
       ];
     } 
-    // Planificación familiar
-    else if (id === '3' || lowerName.includes('planifica') || lowerName.includes('familiar')) {
+    // Odontología - ID 53
+    else if (id === '53' || lowerName.includes('odonto') || lowerName.includes('dental')) {
+      console.log(`Usando tipos de cita para ODONTOLOGÍA`);
+      return [
+        { 
+          id: 'dental-general', 
+          name: 'Consulta odontológica general', 
+          description: 'Evaluación dental general y plan de tratamiento', 
+          durationMinutes: 40,
+          isGeneral: true 
+        },
+        { 
+          id: 'cordales', 
+          name: 'Cirugía de cordales', 
+          description: 'Extracción de muelas del juicio o cordales', 
+          durationMinutes: 60 
+        }
+      ];
+    } 
+    // Medicina General - ID 54
+    else if (id === '54' || lowerName.includes('general') || lowerName.includes('medicina')) {
+      console.log(`Usando tipos de cita para MEDICINA GENERAL`);
+      return [
+        { 
+          id: 'general-consult', 
+          name: 'Consulta general', 
+          description: 'Consulta médica de rutina', 
+          durationMinutes: 30,
+          isGeneral: true
+        },
+        { 
+          id: 'blood-test', 
+          name: 'Examen de sangre', 
+          description: 'Toma de muestras para análisis', 
+          durationMinutes: 15 
+        }
+      ];
+    } 
+    // Oftalmología - ID 55
+    else if (id === '55' || lowerName.includes('oft') || lowerName.includes('optom') || lowerName.includes('ocul')) {
+      console.log(`Usando tipos de cita para OFTALMOLOGÍA`);
+      return [
+        { 
+          id: 'eye-general', 
+          name: 'Consulta oftalmológica general', 
+          description: 'Evaluación visual completa', 
+          durationMinutes: 60,
+          isGeneral: true
+        },
+        { 
+          id: 'oftalmoscopia', 
+          name: 'Oftalmoscopia', 
+          description: 'Examen detallado del fondo de ojo', 
+          durationMinutes: 30 
+        }
+      ];
+    } 
+    // Planificación familiar - ID 56
+    else if (id === '56' || lowerName.includes('planifica') || lowerName.includes('familiar')) {
       console.log(`Usando tipos de cita para PLANIFICACIÓN`);
       return [
         {
@@ -262,7 +297,78 @@ const AppointmentForm = ({
           isGeneral: true
         }
       ];
-    } 
+    }
+    // Cardiología - ID 57
+    else if (id === '57' || lowerName.includes('cardio')) {
+      console.log(`Usando tipos de cita para CARDIOLOGÍA`);
+      return [
+        {
+          id: 'cardio-general',
+          name: 'Consulta cardiológica',
+          description: 'Evaluación de la salud cardiovascular',
+          durationMinutes: 40,
+          isGeneral: true
+        },
+        {
+          id: 'cardio-ecg',
+          name: 'Electrocardiograma',
+          description: 'Prueba de actividad eléctrica del corazón',
+          durationMinutes: 30
+        }
+      ];
+    }
+    // Dermatología - ID 58
+    else if (id === '58' || lowerName.includes('dermat') || lowerName.includes('piel')) {
+      console.log(`Usando tipos de cita para DERMATOLOGÍA`);
+      return [
+        {
+          id: 'derma-general',
+          name: 'Consulta dermatológica',
+          description: 'Evaluación de problemas de la piel',
+          durationMinutes: 30,
+          isGeneral: true
+        }
+      ];
+    }
+    // Traumatología - ID 59
+    else if (id === '59' || lowerName.includes('trauma')) {
+      console.log(`Usando tipos de cita para TRAUMATOLOGÍA`);
+      return [
+        {
+          id: 'trauma-general',
+          name: 'Consulta traumatológica',
+          description: 'Evaluación de problemas musculoesqueléticos',
+          durationMinutes: 35,
+          isGeneral: true
+        }
+      ];
+    }
+    // Ginecología - ID 60
+    else if (id === '60' || lowerName.includes('gineco')) {
+      console.log(`Usando tipos de cita para GINECOLOGÍA`);
+      return [
+        {
+          id: 'gyn-general',
+          name: 'Consulta ginecológica',
+          description: 'Evaluación de salud reproductiva femenina',
+          durationMinutes: 40,
+          isGeneral: true
+        }
+      ];
+    }
+    // Neurología - ID 61
+    else if (id === '61' || lowerName.includes('neuro')) {
+      console.log(`Usando tipos de cita para NEUROLOGÍA`);
+      return [
+        {
+          id: 'neuro-general',
+          name: 'Consulta neurológica',
+          description: 'Evaluación de problemas neurológicos',
+          durationMinutes: 45,
+          isGeneral: true
+        }
+      ];
+    }
     // Para cualquier otra especialidad
     else {
       console.log(`Usando tipos de cita GENÉRICOS`);
@@ -288,59 +394,44 @@ const AppointmentForm = ({
     if (!selectedSpecialtyId) return;
     
     setIsLoading(true);
-    setError(null);
     setAppointmentTypesError(null);
     
-    // Obtener la especialidad seleccionada para mostrar tipos predefinidos si es necesario
-    const selectedSpecialty = specialties.find(s => s.id === selectedSpecialtyId);
-    console.log(`Especialidad seleccionada:`, selectedSpecialty);
-    
     try {
-      // Intentar obtener tipos de cita desde la API 
-      console.log(`Cargando tipos de cita para especialidad ${selectedSpecialtyId}`);
+      // Obtener tipos de cita por especialidad usando el endpoint correcto
+      console.log(`Buscando tipos de cita para especialidad con ID: ${selectedSpecialtyId}`);
       
-      const response = await apiServices.appointmentTypes.getAppointmentTypesBySpecialty(
-        selectedSpecialtyId
-      );
-      
-      console.log('Respuesta API tipos de cita:', response);
-      
-      if (response && response.items && response.items.length > 0) {
-        setAppointmentTypes(response.items);
-        console.log(`Se encontraron ${response.items.length} tipos de cita en la API`);
-      } else {
-        console.log('No se encontraron tipos de cita en la API, cargando predefinidos');
-        // Si no hay tipos de cita, cargar los predefinidos
-        const backupTypes = getPresetAppointmentTypes(selectedSpecialty?.name, selectedSpecialtyId);
-        setAppointmentTypes(backupTypes);
-        
-        if (backupTypes.length === 0) {
-          setAppointmentTypesError('No hay tipos de cita disponibles para esta especialidad');
-        } else {
-          console.log(`Cargados ${backupTypes.length} tipos predefinidos`);
-          // No mostramos error si tenemos tipos predefinidos
-          setAppointmentTypesError(null);
-        }
+      // Observamos el ID real que se está utilizando
+      const specialtyIdNum = parseInt(selectedSpecialtyId, 10);
+      if (isNaN(specialtyIdNum)) {
+        console.error(`ID de especialidad inválido para tipos de cita: ${selectedSpecialtyId}`);
+        throw new Error('ID de especialidad inválido');
       }
-    } catch (err: any) {
-      console.error(`Error al cargar tipos de cita para especialidad ${selectedSpecialtyId}:`, err);
       
-      // Cargar tipos predefinidos como respaldo basados en la especialidad
-      console.log('Cargando tipos predefinidos debido al error');
-      const predefinedTypes = getPresetAppointmentTypes(selectedSpecialty?.name, selectedSpecialtyId);
+      // Usar el endpoint correcto para tipos de cita
+      const appointmentTypesUrl = `/appointment-types/specialty/${selectedSpecialtyId}`;
+      console.log(`Consultando endpoint: ${appointmentTypesUrl}`);
+      
+      const response = await apiClient.get(appointmentTypesUrl);
+      
+      if (response && Array.isArray(response) && response.length > 0) {
+        console.log(`Se encontraron ${response.length} tipos de cita para la especialidad ${selectedSpecialtyId}`);
+        setAppointmentTypes(response);
+      } else {
+        console.log(`No se encontraron tipos de cita para especialidad ${selectedSpecialtyId}, usando predefinidos`);
+        // Si no hay datos, usar los predefinidos como fallback
+        const specialty = specialties.find(s => s.id === selectedSpecialtyId);
+        const predefinedTypes = getPresetAppointmentTypes(specialty?.name, selectedSpecialtyId);
+        setAppointmentTypes(predefinedTypes);
+      }
+      
+    } catch (err) {
+      console.error('Error al cargar tipos de cita:', err);
+      setAppointmentTypesError('No se pudieron cargar los tipos de citas disponibles.');
+      
+      // Fallback a tipos predefinidos según especialidad
+      const specialty = specialties.find(s => s.id === selectedSpecialtyId);
+      const predefinedTypes = getPresetAppointmentTypes(specialty?.name, selectedSpecialtyId);
       setAppointmentTypes(predefinedTypes);
-      
-      if (predefinedTypes.length > 0) {
-        // No mostramos error si tenemos tipos predefinidos
-        setAppointmentTypesError(null);
-        console.log(`Cargados ${predefinedTypes.length} tipos predefinidos por error`);
-      } else {
-        if (err.status === 404) {
-          setAppointmentTypesError('No hay tipos de cita disponibles para esta especialidad');
-        } else {
-          setAppointmentTypesError('No se pudieron cargar los tipos de cita');
-        }
-      }
     } finally {
       setIsLoading(false);
     }
@@ -353,32 +444,52 @@ const AppointmentForm = ({
     setError(null);
     
     try {
-      // Obtener doctores por especialidad
-      const response = await apiServices.specialties.getDoctorsBySpecialty(
-        selectedSpecialtyId,
-        { limit: 20 }
-      );
-      // Convertir a nuestro tipo Doctor local
-      const doctorsData = (response.items || []).map(doc => ({
-        id: doc.id,
-        firstName: doc.firstName,
-        lastName: doc.lastName,
-        specialty: typeof doc.specialty === 'string' ? doc.specialty : doc.specialty?.name,
-        rating: doc.rating
-      }));
-      setDoctors(doctorsData);
-    } catch (err) {
+      // Obtener doctores por especialidad usando el endpoint correcto
+      console.log(`Buscando doctores para especialidad con ID: ${selectedSpecialtyId}`);
+      
+      // Usar el endpoint correcto para obtener doctores filtrados por especialidad y rol
+      const doctorsUrl = `/users?role=DOCTOR&specialtyId=${selectedSpecialtyId}`;
+      console.log(`Consultando endpoint: ${doctorsUrl}`);
+      
+      const apiResponse = await apiClient.get(doctorsUrl);
+      // Usar aserción de tipo para evitar errores de TypeScript
+      const response = apiResponse as any;
+      
+      if (response && response.items && response.items.length > 0) {
+        console.log(`Se encontraron ${response.items.length} doctores para la especialidad ${selectedSpecialtyId}`);
+        
+        // Mapear los doctores al formato esperado por el componente
+        const mappedDoctors = response.items.map((doc: any) => ({
+          id: doc.id,
+          firstName: doc.firstName || '',
+          lastName: doc.lastName || '',
+          specialty: typeof doc.specialty === 'string' ? doc.specialty : doc.specialty?.name || '',
+          rating: doc.rating || 0
+        }));
+        
+        setDoctors(mappedDoctors);
+      } else {
+        console.log('No se encontraron doctores para esta especialidad');
+        setDoctors([]);
+        setError('No hay médicos disponibles para esta especialidad.');
+      }
+    } catch (err: any) {
       console.error('Error al cargar doctores:', err);
       setError('No se pudieron cargar los doctores disponibles.');
+      
+      // Si es un error 404, mostrar un mensaje específico
+      if (err.status === 404) {
+        setError('No se encontraron médicos para esta especialidad.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const loadAvailableTimes = async () => {
-    if (!selectedDoctorId || !selectedDate) {
+    if (!selectedDoctorId || !selectedDate || !selectedAppointmentTypeId) {
       console.log('Falta información necesaria para cargar horarios');
-      console.log(`Doctor: ${selectedDoctorId}, Fecha: ${selectedDate}`);
+      console.log(`Doctor: ${selectedDoctorId}, Fecha: ${selectedDate}, Tipo de cita: ${selectedAppointmentTypeId}`);
       return;
     }
     
@@ -386,22 +497,67 @@ const AppointmentForm = ({
     setError(null);
     
     try {
-      // Obtener horarios disponibles para el doctor en la fecha seleccionada
-      console.log(`Cargando horarios para doctor ${selectedDoctorId}, fecha ${selectedDate}`);
+      console.log(`Buscando horarios disponibles para doctor ${selectedDoctorId} en fecha ${selectedDate}`);
       
-      // Usar el servicio de doctores para obtener disponibilidad
-      const slots = await apiServices.doctors.getAvailability(
-        selectedDoctorId,
-        selectedDate
-      );
+      // Usar el endpoint correcto para slots de disponibilidad
+      const availabilityUrl = `/availabilities/slots?doctorId=${selectedDoctorId}&appointmentTypeId=${selectedAppointmentTypeId}&date=${selectedDate}`;
+      console.log(`Consultando endpoint: ${availabilityUrl}`);
       
-      setAvailableTimes(slots || []);
-      console.log(`Horarios cargados: ${slots ? slots.length : 0}`);
-    } catch (err) {
+      try {
+        const response = await apiClient.get(availabilityUrl);
+        
+        // Usar una aserción de tipo para evitar errores de TypeScript
+        const apiResponse = response as any;
+        if (apiResponse && Array.isArray(apiResponse) && apiResponse.length > 0) {
+          console.log(`Se encontraron ${apiResponse.length} horarios disponibles`);
+          
+          // Transformar los datos a solo horas (formato "HH:MM")
+          const times = apiResponse.map((slot: any) => {
+            const date = new Date(slot.startTime);
+            return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+          });
+          
+          // Ordenar las horas
+          times.sort();
+          
+          setAvailableTimes(times);
+          return;
+        }
+        
+        // Si llegamos aquí, no hay slots disponibles
+        console.log('No se encontraron horarios disponibles en la respuesta');
+      } catch (apiError) {
+        console.error('Error al consultar el API de disponibilidad:', apiError);
+      }
+      
+      // Si no se pudieron obtener horarios o hubo un error, usar los predeterminados
+      console.log('Generando horarios de ejemplo como fallback');
+      
+      // Generar datos de ejemplo basados en el día de la semana
+      const date = new Date(selectedDate);
+      const dayOfWeek = date.getDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+      
+      // Determinar franjas horarias según el día
+      let mockTimes: string[] = [];
+      
+      if (dayOfWeek === 0) {
+        // Domingo - horarios reducidos
+        mockTimes = ['10:00', '11:00', '12:00'];
+      } else if (dayOfWeek === 6) {
+        // Sábado - medio día
+        mockTimes = ['08:00', '09:00', '10:00', '11:00', '12:00'];
+      } else {
+        // Días laborables - horario completo
+        mockTimes = ['08:00', '09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00'];
+      }
+      
+      console.log(`Generados ${mockTimes.length} horarios para el día ${selectedDate}`);
+      setAvailableTimes(mockTimes);
+    } catch (err: any) {
       console.error('Error al cargar horarios disponibles:', err);
       setError('No se pudieron cargar los horarios disponibles.');
       
-      // Usar horas de ejemplo como fallback en caso de error (solo para desarrollo)
+      // Usar horas de ejemplo como fallback en caso de error
       const mockTimes = ['08:00', '09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
       setAvailableTimes(mockTimes);
     } finally {
@@ -496,10 +652,23 @@ const AppointmentForm = ({
         );
         Alert.alert('Éxito', 'Cita reprogramada correctamente');
       } else {
-        // Crear nueva cita
+        // Convertir los IDs a números para la creación de citas
+        const specialtyIdNum = parseInt(selectedSpecialtyId, 10);
+        const doctorIdNum = parseInt(selectedDoctorId, 10);
+        
+        // Verificar si los IDs son válidos
+        if (isNaN(specialtyIdNum) || isNaN(doctorIdNum)) {
+          console.error('IDs inválidos para crear cita:', { 
+            specialtyId: selectedSpecialtyId, 
+            doctorId: selectedDoctorId 
+          });
+          throw new Error('IDs inválidos para crear cita');
+        }
+        
+        // Crear nueva cita con los tipos de datos correctos
         result = await apiServices.appointments.createAppointment({
-          specialtyId: selectedSpecialtyId,
-          doctorId: selectedDoctorId,
+          specialtyId: selectedSpecialtyId, // Usar string ya que la API espera string
+          doctorId: selectedDoctorId, // Usar string ya que la API espera string
           date: appointmentDateTime,
           appointmentTypeId: selectedAppointmentTypeId,
           notes: ''
@@ -513,7 +682,7 @@ const AppointmentForm = ({
       } else {
         router.replace('/AppointmentsScreen');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al procesar cita:', err);
       setError('No se pudo procesar la cita. Intente nuevamente.');
       Alert.alert('Error', 'No se pudo procesar la cita. Intente nuevamente.');

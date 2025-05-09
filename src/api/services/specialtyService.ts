@@ -15,33 +15,11 @@ class SpecialtyService {
    */
   async getAllSpecialties(params: Record<string, any> = {}): Promise<ProcessedPaginatedResponse<Specialty>> {
     try {
-      // Validar parámetros de consulta
-      if (params.page && (isNaN(params.page) || params.page < 1)) {
-        throw {
-          status: 400,
-          message: 'El número de página debe ser un valor numérico mayor a 0'
-        } as ApiError;
-      }
-      
-      if (params.limit && (isNaN(params.limit) || params.limit < 1)) {
-        throw {
-          status: 400,
-          message: 'El límite de resultados debe ser un valor numérico mayor a 0'
-        } as ApiError;
-      }
-      
+      // Llamada simple al endpoint sin parámetros adicionales
+      console.log('Llamando al endpoint de especialidades: GET /specialties');
       const response = await apiClient.get<any, PaginatedResponse<Specialty>>(
-        API_ENDPOINTS.SPECIALTIES.GET_ALL, 
-        { params }
+        API_ENDPOINTS.SPECIALTIES.GET_ALL
       );
-      
-      // Validar la respuesta
-      if (!response || !response.data) {
-        throw {
-          status: 404,
-          message: 'No se encontraron especialidades médicas'
-        } as ApiError;
-      }
       
       return processPaginatedResponse<Specialty>(response);
     } catch (error: any) {
