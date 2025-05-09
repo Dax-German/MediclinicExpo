@@ -2,13 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    FlatList,
+    Image,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import specialtyService from '../../src/api/services/specialtyService';
 
@@ -25,36 +25,36 @@ interface Specialty {
 // Datos de ejemplo para cuando falle la carga desde el backend
 const MOCK_SPECIALTIES: Specialty[] = [
   { 
-    id: '1', 
+    id: '54', 
     name: 'General', 
     icon: 'medical',
     localImage: require('../../assets/Iconos/estetoscopio.png')
   },
   { 
-    id: '2', 
+    id: '51', 
     name: 'Pediatría', 
     icon: 'people',
     localImage: require('../../assets/Iconos/pediatria.png')
   },
   { 
-    id: '3', 
+    id: '56', 
     name: 'Planificación', 
     icon: 'calendar',
     localImage: require('../../assets/Iconos/calendario.png')
   },
   { 
-    id: '4', 
+    id: '53', 
     name: 'Odontología', 
     icon: 'medkit',
     localImage: require('../../assets/Iconos/odontologia.png')
   },
   { 
-    id: '5', 
+    id: '55', 
     name: 'Optometría', 
     icon: 'eye',
     localImage: require('../../assets/Iconos/optometria.png')
   },
-  { id: '6', name: 'Más', icon: 'add' }
+  { id: 'more', name: 'Más', icon: 'add' }
 ];
 
 interface SpecialtyListProps {

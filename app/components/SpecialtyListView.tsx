@@ -19,38 +19,8 @@ interface Specialty {
   localImage?: any;
 }
 
-// Datos de ejemplo con IDs correctos
+// Datos de ejemplo con IDs correctos - solo especialidades adicionales (no las que están en la pantalla principal)
 const MOCK_SPECIALTIES: Specialty[] = [
-  { 
-    id: '51', 
-    name: 'Pediatría', 
-    icon: 'person-outline',
-    description: 'Especialidad médica que se ocupa de la salud y las enfermedades de los niños.'
-  },
-  { 
-    id: '53', 
-    name: 'Odontología', 
-    icon: 'medical-outline',
-    description: 'Especialidad que se ocupa del diagnóstico, tratamiento y prevención de enfermedades bucodentales.'
-  },
-  { 
-    id: '54', 
-    name: 'Medicina General', 
-    icon: 'pulse-outline',
-    description: 'Atención médica integral para personas de todas las edades.'
-  },
-  { 
-    id: '55', 
-    name: 'Optometría', 
-    icon: 'eye-outline',
-    description: 'Especialidad que se encarga del cuidado primario de la salud visual.'
-  },
-  { 
-    id: '56', 
-    name: 'Planificación', 
-    icon: 'calendar-outline',
-    description: 'Servicios de planificación familiar y salud reproductiva.'
-  },
   { 
     id: '57', 
     name: 'Cardiología', 
